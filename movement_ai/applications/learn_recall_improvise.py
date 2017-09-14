@@ -179,7 +179,7 @@ class UiWindow(QtGui.QWidget):
         self._add_control_widget(self._memorize_checkbox)
 
     def _on_changed_memorize(self):
-        master_behavior.memorize = True
+        master_behavior.memorize = self._memorize_checkbox.isChecked()
 
     def _add_label(self, string):
         label = QtGui.QLabel(string)

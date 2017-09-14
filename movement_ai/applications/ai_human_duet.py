@@ -442,7 +442,7 @@ class UiWindow(QtGui.QWidget):
         self._add_control_widget(self._memorize_checkbox)
 
     def _on_changed_memorize(self):
-        switching_behavior.memorize = True
+        switching_behavior.memorize = self._memorize_checkbox.isChecked()
         
     def _mode_enabled_in_args(self, mode):
         enabled_arg = "enable_%s" % mode
