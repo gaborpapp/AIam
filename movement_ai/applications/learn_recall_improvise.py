@@ -148,6 +148,7 @@ class UiWindow(QtGui.QWidget):
         self._add_recall_amount_control()
         self._add_model_control()
         self._add_improvise_parameters_form()
+        self._add_input_only_control()
         
         timer = QtCore.QTimer(self)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
@@ -224,11 +225,22 @@ class UiWindow(QtGui.QWidget):
         parameters_form = ParametersForm(improvise_params, layout=self._layout, row_offset=self._row)
         self._row += len(improvise_params)
 
+    def _add_input_only_control(self):
+        self._add_label("Input only")
+        self._input_only_checkbox = QtGui.QCheckBox()
+        self._input_only_checkbox.stateChanged.connect(self._on_changed_input_only)
+        self._add_control_widget(self._input_only_checkbox)
+
+    def _on_changed_input_only(self):
+        master_behavior.input_only = self._input_only_checkbox.isChecked()
+
 class MasterBehavior(Behavior):
     def __init__(self):
         Behavior.__init__(self)
         self._recall_amount = args.recall_amount
         self.memorize = args.memorize
+        self.input_only = False
+        self._input = None
 
     def set_recall_amount(self, recall_amount):
         self._recall_amount = recall_amount
@@ -248,10 +260,14 @@ class MasterBehavior(Behavior):
         return True
 
     def on_input(self, input_):
+        self._input = input_
         if self.memorize:
             memory.on_input(input_)
     
     def get_output(self):
+        if self.input_only:
+            return self._input
+        
         improvise_output = self._get_improvise_output()
         recall_output = recall_behavior.get_output()
         if recall_output is None:
