@@ -102,7 +102,7 @@ students["autoencoder"].set_learning_rate(args.learning_rate)
 
 def set_model(model_name):
     global student
-    application.set_student = students[model_name]
+    application.set_student(students[model_name])
     student = students[model_name]
     master_behavior.set_model(model_name)
 
