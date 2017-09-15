@@ -139,6 +139,8 @@ class Experiment(EventListener):
             Event.SET_LEARNING_RATE: lambda event: self.student.set_learning_rate(event.content),
             Event.SET_MODEL_NOISE_TO_ADD: self._set_model_noise_to_add,
             Event.SET_MIN_TRAINING_LOSS: self._set_min_training_loss,
+            Event.SET_MAX_ANGULAR_STEP: lambda event: self.entity.set_max_angular_step(
+                event.content),
         })
         EventListener.__init__(self, handlers=event_handlers)
 

@@ -158,7 +158,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
             self._add_io_blending_tab_widget()
         if self.args.enable_features:
             self._add_features_tab_widgets()
-        self.add_physics_tab_widget(self._layout)
+        self.add_entity_tab_widget(self._layout)
         self.add_learning_tab_widget(self._layout)
         self.setLayout(self._layout)
         self.set_mode(self.args.mode)

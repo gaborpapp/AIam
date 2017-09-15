@@ -1,37 +1,33 @@
 from PyQt4 import QtCore, QtGui
+from control_layout import ControlLayout
 from parameters import *
 
 SLIDER_PRECISION = 1000
 
 class ParametersForm:
-    def __init__(self, parameters, parent=None, layout=None, row_offset=0):
-        if layout is None:
-            self._layout = QtGui.QGridLayout()
+    def __init__(self, parameters, parent=None, control_layout=None):
+        if control_layout is None:
+            self._control_layout = ControlLayout()
         else:
-            self._layout = layout
+            self._control_layout = control_layout
         self._field_widgets = {}
         self._value_widgets = {}
-        self._row = row_offset
+        self._row = 0
         for parameter in parameters:
-            name_widget = QtGui.QLabel(parameter.name)
             field_widget = self._create_parameter_field(parameter)
             self._field_widgets[parameter.name] = field_widget
-            self._add_widget(name_widget, 0)
+            self._control_layout.add_label(parameter.name)
             if isinstance(field_widget, Slider):
                 value_widget = QtGui.QLabel()
                 value_widget.setFixedWidth(30)
-                self._add_widget(field_widget, 1)
-                self._add_widget(value_widget, 2)
+                self._control_layout.add_control_widgets([field_widget, value_widget])
                 self._value_widgets[parameter.name] = value_widget
                 self._update_value_widget(parameter)
             else:
-                self._add_widget(field_widget, 1, column_span=2)                
+                self._control_layout.add_control_widget(field_widget)                
             self._row += 1
-        if layout is None:
-            parent.addLayout(self._layout)
-
-    def _add_widget(self, widget, column, row_span=1, column_span=1):
-        self._layout.addWidget(widget, self._row, column, row_span, column_span)
+        if control_layout is None:
+            parent.addLayout(self._control_layout.layout)
 
     def _create_parameter_field(self, parameter):
         if parameter.choices is not None:

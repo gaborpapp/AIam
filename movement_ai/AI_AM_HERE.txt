@@ -7,6 +7,10 @@ AI:
 
 python applications/ai_human_duet.py --output-receiver-host=localhost --enable-improvise --with-ui --model=autoencoder --delay-shift=0 --mirror-duration=5 --improvise-duration=5 --recall-duration=5 --pn-convert-to-z-up --pn-host=192.168.88.250
 
+or
+
+python applications/learn_recall_improvise.py --output-receiver-host=localhost --with-ui --model=autoencoder --pn-convert-to-z-up --memorize --max-angular-step=0.15
+
 
 Simulated PN:
 

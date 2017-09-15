@@ -91,15 +91,18 @@ class Candidate:
 class DynamicQuaternionsInterpolator:
     EPSILON = 1E-12
     
-    def __init__(self, joint_name, max_angular_step=None):
+    def __init__(self, joint_name):
         self._previous_quaternion = None
         self._joint_name = joint_name
+        self._max_angular_step = 1
+
+    def set_max_angular_step(self, max_angular_step):
         self._max_angular_step = max_angular_step
 
     def interpolate(self, q0, q1, amount):
         candidates = self._get_candidates(q0, q1, amount)
         nearest_candidate = self._pick_nearest_candidate(candidates)
-        if self._previous_quaternion is None or self._max_angular_step is None or \
+        if self._previous_quaternion is None or \
            nearest_candidate.angular_distance < self._max_angular_step:
             result = nearest_candidate.quaternion
         else:
@@ -159,7 +162,7 @@ class Entity(BaseEntity):
         parser.add_argument("--rotation-parametrization", "-r",
                             choices=["vectors", "quaternion"])
         parser.add_argument("--naive-quaternion-interpolation", action="store_true")
-        parser.add_argument("--max-angular-step", type=float)
+        parser.add_argument("--max-angular-step", type=float, default=1.)
         parser.add_argument("--translate", action="store_true")
         parser.add_argument("--translation-weight", type=float, default=1.)
         parser.add_argument("--friction", action="store_true")
@@ -193,6 +196,7 @@ class Entity(BaseEntity):
         else:
             self._vertical_axis = "y"
             self._coordinate_up = 1
+        self._max_angular_step = self.args.max_angular_step
         self._normalized_constrainers = self._create_constrainers()
         self._unnormalized_constrainers = self._create_constrainers()
         self.modified_root_vertical_orientation = None
@@ -439,8 +443,9 @@ class Entity(BaseEntity):
         else:
             joint_index = joint.definition.index
             if joint_index not in self._rotation_interpolators:
-                self._rotation_interpolators[joint_index] = DynamicQuaternionsInterpolator(
-                    joint.definition.name, self.args.max_angular_step)
+                interpolator = DynamicQuaternionsInterpolator(joint.definition.name)
+                interpolator.set_max_angular_step(self._max_angular_step)
+                self._rotation_interpolators[joint_index] = interpolator
             return self._rotation_interpolators[joint_index]
         
     def set_friction(self, enable_friction):
@@ -450,4 +455,8 @@ class Entity(BaseEntity):
         
     def get_friction(self):
         return self._enable_friction
-    
+
+    def set_max_angular_step(self, max_angular_step):
+        self._max_angular_step = max_angular_step
+        for interpolator in self._rotation_interpolators.values():
+            interpolator.set_max_angular_step(max_angular_step)

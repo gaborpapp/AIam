@@ -42,6 +42,7 @@ class Event:
     SET_INPUT_DELAY = "SET_INPUT_DELAY"
     SET_MIN_TRAINING_LOSS = "SET_MIN_TRAINING_LOSS"
     TRAINING_LOSS = "TRAINING_LOSS"
+    SET_MAX_ANGULAR_STEP = "SET_MAX_ANGULAR_STEP"
 
     def __init__(self, type_, content=None):
         self.type = type_

@@ -48,6 +48,7 @@ from dimensionality_reduction.factory import DimensionalityReductionFactory
 import tracking.pn.receiver
 from delay_shift import SmoothedDelayShift
 from chaining import Chainer
+from ui.control_layout import ControlLayout
 
 parser = ArgumentParser()
 parser.add_argument("--pn-host", default="localhost")
@@ -403,9 +404,8 @@ class UiWindow(QtGui.QWidget):
     def __init__(self, master_behavior):
         QtGui.QWidget.__init__(self)
         self._master_behavior = master_behavior
-        self._layout = QtGui.QGridLayout()
-        self._row = 0
-        self.setLayout(self._layout)
+        self._control_layout = ControlLayout()
+        self.setLayout(self._control_layout.layout)
 
         self._add_learning_rate_control()
         self._add_memorize_control()
@@ -419,9 +419,9 @@ class UiWindow(QtGui.QWidget):
         timer.start()
 
     def _add_learning_rate_control(self):
-        self._add_label("Learning rate")
+        self._control_layout.add_label("Learning rate")
         self._learning_rate_slider = self._create_learning_rate_slider()
-        self._add_control_widget(self._learning_rate_slider)
+        self._control_layout.add_control_widget(self._learning_rate_slider)
         
     def _create_learning_rate_slider(self):
         slider = QtGui.QSlider(QtCore.Qt.Horizontal)
@@ -436,10 +436,10 @@ class UiWindow(QtGui.QWidget):
         students["autoencoder"].set_learning_rate(learning_rate)
 
     def _add_memorize_control(self):
-        self._add_label("Memorize")
+        self._control_layout.add_label("Memorize")
         self._memorize_checkbox = QtGui.QCheckBox()
         self._memorize_checkbox.stateChanged.connect(self._on_changed_memorize)
-        self._add_control_widget(self._memorize_checkbox)
+        self._control_layout.add_control_widget(self._memorize_checkbox)
 
     def _on_changed_memorize(self):
         switching_behavior.memorize = self._memorize_checkbox.isChecked()
@@ -452,9 +452,9 @@ class UiWindow(QtGui.QWidget):
         switching_behavior.set_mode_enabled(mode, checkbox.isChecked())
 
     def _add_io_blending_control(self):
-        self._add_label("IO blending")
+        self._control_layout.add_label("IO blending")
         self._io_blending_slider = self._create_io_blending_slider()
-        self._add_control_widget(self._io_blending_slider)
+        self._control_layout.add_control_widget(self._io_blending_slider)
         self._on_changed_io_blending_slider()
 
     def _add_label(self, string):
@@ -479,8 +479,8 @@ class UiWindow(QtGui.QWidget):
 
     def _add_model_control(self):
         model_combobox = self._create_model_combobox()
-        self._add_label("Model")
-        self._add_control_widget(model_combobox)
+        self._control_layout.add_label("Model")
+        self._control_layout.add_control_widget(model_combobox)
         
     def _create_model_combobox(self):
         combobox = QtGui.QComboBox()
@@ -498,8 +498,8 @@ class UiWindow(QtGui.QWidget):
         self._add_mode_control("Improvise", SwitchingBehavior.IMPROVISE)
 
     def _add_mode_control(self, name, mode):
-        self._add_label(name)
-        self._add_control_widget(self._create_mode_checkbox(mode))
+        self._control_layout.add_label(name)
+        self._control_layout.add_control_widget(self._create_mode_checkbox(mode))
 
     def _create_mode_checkbox(self, mode):
         checkbox = QtGui.QCheckBox()
@@ -515,9 +515,9 @@ class UiWindow(QtGui.QWidget):
         switching_behavior.set_mode_enabled(mode, checkbox.isChecked())
 
     def _add_delay_shift_control(self):
-        self._add_label("Delay shift")
+        self._control_layout.add_label("Delay shift")
         self._delay_shift_slider = self._create_delay_shift_slider()
-        self._add_control_widget(self._delay_shift_slider)
+        self._control_layout.add_control_widget(self._delay_shift_slider)
         
     def _create_delay_shift_slider(self):
         slider = QtGui.QSlider(QtCore.Qt.Horizontal)

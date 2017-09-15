@@ -19,7 +19,7 @@ MODELS_INFO = {
         }
     }
 
-ENTITY_ARGS = "-r quaternion --friction --translate --max-angular-step=0.15"
+ENTITY_ARGS = "-r quaternion --friction --translate"
 SKELETON_DEFINITION = "scenes/pn-01.22_z_up_xyz_skeleton.bvh"
 NUM_REDUCED_DIMENSIONS = 7
 Z_UP = True
@@ -45,6 +45,7 @@ from dimensionality_reduction.behaviors.improvise import ImproviseParameters, Im
 from dimensionality_reduction.factory import DimensionalityReductionFactory
 import tracking.pn.receiver
 from ui.parameters_form import ParametersForm
+from ui.control_layout import ControlLayout
 
 parser = ArgumentParser()
 parser.add_argument("--pn-host", default="localhost")
@@ -95,6 +96,10 @@ def set_model(model_name):
     student = students[model_name]
     master_behavior.set_model(model_name)
 
+def set_max_angular_step(max_angular_step):
+    master_entity.set_max_angular_step(max_angular_step)
+    recall_entity.set_max_angular_step(max_angular_step)
+        
 class Memory:
     def __init__(self):
         self.frames = []
@@ -139,25 +144,25 @@ class Recall:
 class UiWindow(QtGui.QWidget):
     def __init__(self, master_behavior):
         QtGui.QWidget.__init__(self)
-        self._layout = QtGui.QGridLayout()
-        self._row = 0
-        self.setLayout(self._layout)
+        self._control_layout = ControlLayout()
+        self.setLayout(self._control_layout.layout)
 
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
         self._add_model_control()
+        self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
         self._add_input_only_control()
         
         timer = QtCore.QTimer(self)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
         timer.start()
-
+    
     def _add_learning_rate_control(self):
-        self._add_label("Learning rate")
+        self._control_layout.add_label("Learning rate")
         self._learning_rate_slider = self._create_learning_rate_slider()
-        self._add_control_widget(self._learning_rate_slider)
+        self._control_layout.add_control_widget(self._learning_rate_slider)
         
     def _create_learning_rate_slider(self):
         slider = QtGui.QSlider(QtCore.Qt.Horizontal)
@@ -172,27 +177,19 @@ class UiWindow(QtGui.QWidget):
         students["autoencoder"].set_learning_rate(learning_rate)
 
     def _add_memorize_control(self):
-        self._add_label("Memorize")
+        self._control_layout.add_label("Memorize")
         self._memorize_checkbox = QtGui.QCheckBox()
         self._memorize_checkbox.setChecked(args.memorize)
         self._memorize_checkbox.stateChanged.connect(self._on_changed_memorize)
-        self._add_control_widget(self._memorize_checkbox)
+        self._control_layout.add_control_widget(self._memorize_checkbox)
 
     def _on_changed_memorize(self):
         master_behavior.memorize = self._memorize_checkbox.isChecked()
 
-    def _add_label(self, string):
-        label = QtGui.QLabel(string)
-        self._layout.addWidget(label, self._row, 0)
-
-    def _add_control_widget(self, widget):
-        self._layout.addWidget(widget, self._row, 1)
-        self._row += 1
-
     def _add_recall_amount_control(self):
-        self._add_label("Recall amount")
+        self._control_layout.add_label("Recall amount")
         self._recall_amount_slider = self._create_recall_amount_slider()
-        self._add_control_widget(self._recall_amount_slider)
+        self._control_layout.add_control_widget(self._recall_amount_slider)
         
     def _create_recall_amount_slider(self):
         slider = QtGui.QSlider(QtCore.Qt.Horizontal)
@@ -205,11 +202,28 @@ class UiWindow(QtGui.QWidget):
     def _on_changed_recall_amount_slider(self):
         recall_amount = float(self._recall_amount_slider.value()) / SLIDER_PRECISION
         master_behavior.set_recall_amount(recall_amount)
+
+    def _add_max_angular_step_control(self):
+        self._control_layout.add_label("Max angular step")
+        self._max_angular_step_slider = self._create_max_angular_step_slider()
+        self._control_layout.add_control_widget(self._max_angular_step_slider)
+        
+    def _create_max_angular_step_slider(self):
+        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        slider.setRange(0, SLIDER_PRECISION)
+        slider.setSingleStep(1)
+        slider.setValue(args.max_angular_step * SLIDER_PRECISION)
+        slider.valueChanged.connect(lambda value: self._on_changed_max_angular_step_slider())
+        return slider
+
+    def _on_changed_max_angular_step_slider(self):
+        max_angular_step = float(self._max_angular_step_slider.value()) / SLIDER_PRECISION
+        set_max_angular_step(max_angular_step)
         
     def _add_model_control(self):
         model_combobox = self._create_model_combobox()
-        self._add_label("Model")
-        self._add_control_widget(model_combobox)
+        self._control_layout.add_label("Model")
+        self._control_layout.add_control_widget(model_combobox)
         
     def _create_model_combobox(self):
         combobox = QtGui.QComboBox()
@@ -222,14 +236,13 @@ class UiWindow(QtGui.QWidget):
         set_model(MODELS[value])
 
     def _add_improvise_parameters_form(self):
-        parameters_form = ParametersForm(improvise_params, layout=self._layout, row_offset=self._row)
-        self._row += len(improvise_params)
+        parameters_form = ParametersForm(improvise_params, control_layout=self._control_layout)
 
     def _add_input_only_control(self):
-        self._add_label("Input only")
+        self._control_layout.add_label("Input only")
         self._input_only_checkbox = QtGui.QCheckBox()
         self._input_only_checkbox.stateChanged.connect(self._on_changed_input_only)
-        self._add_control_widget(self._input_only_checkbox)
+        self._control_layout.add_control_widget(self._input_only_checkbox)
 
     def _on_changed_input_only(self):
         master_behavior.input_only = self._input_only_checkbox.isChecked()
@@ -404,6 +417,7 @@ avatars = [avatar]
 application = Application(students[args.model], avatars, args)
 
 set_model(args.model)
+set_max_angular_step(args.max_angular_step)
 
 def receive_from_pn(pn_entity):
     for frame in pn_receiver.get_frames():

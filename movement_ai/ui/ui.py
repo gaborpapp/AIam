@@ -16,6 +16,7 @@ from floor_grid import FloorGrid
 from floor_spots import FloorSpots
 from floor_checkerboard import FloorCheckerboard
 from text_renderer import GlutTextRenderer
+from control_layout import ControlLayout
 import shutil
 
 TOOLBAR_HEIGHT = 350
@@ -285,39 +286,51 @@ class ExperimentToolbar(QtGui.QWidget):
         if parameter.name == "delay":
             self.parent().client.send_event(Event(Event.SET_INPUT_DELAY, parameter.value()))
         
-    def add_physics_tab_widget(self, parent):
+    def add_entity_tab_widget(self, parent):
         if self.args.entity == "hierarchical":
-            physics_tab_widget = QtGui.QTabWidget()
-            physics_tab = QtGui.QWidget()
+            entity_tab_widget = QtGui.QTabWidget()
+            entity_tab = QtGui.QWidget()
             layout = QtGui.QVBoxLayout()
-            layout.setSpacing(0)
-            layout.setMargin(0)
-            physics_tab.setLayout(layout)
-
-            enable_friction_layout = self._create_enable_friction_checkbox_layout()
-            layout.addLayout(enable_friction_layout)
-            
+            entity_tab.setLayout(layout)
+            control_layout = ControlLayout()
+            self._add_hierarchical_parameters(control_layout)
+            layout.addLayout(control_layout.layout)
             layout.addStretch(1)
-            physics_tab_widget.addTab(physics_tab, "Physics")
-            parent.addWidget(physics_tab_widget)
+            entity_tab_widget.addTab(entity_tab, "Entity")
+            parent.addWidget(entity_tab_widget)
 
-    def _create_enable_friction_checkbox_layout(self):
-        layout = QtGui.QHBoxLayout()
-        layout.setMargin(5)
-        self.enable_friction_checkbox = QtGui.QCheckBox()
-        self.enable_friction_checkbox.setEnabled(not self.args.enable_io_blending)
-        self.enable_friction_checkbox.setChecked(self.args.friction)
-        self.enable_friction_checkbox.stateChanged.connect(
-            self._enable_friction_checkbox_changed)
-        label = QtGui.QLabel("Friction")
-        layout.addWidget(self.enable_friction_checkbox)
-        layout.addWidget(label)
-        layout.addStretch(1)
-        return layout
+    def _add_hierarchical_parameters(self, control_layout):
+        control_layout.add_label("Friction")
+        self.enable_friction_checkbox = self._create_enable_friction_checkbox()
+        control_layout.add_control_widget(self.enable_friction_checkbox)
+
+        if self.args.enable_io_blending:
+            control_layout.add_label("Max angular step")
+            self._max_angular_step_slider = self._create_max_angular_step_slider()
+            control_layout.add_control_widget(self._max_angular_step_slider)
+
+    def _create_enable_friction_checkbox(self):
+        checkbox = QtGui.QCheckBox()
+        checkbox.setEnabled(not self.args.enable_io_blending)
+        checkbox.setChecked(self.args.friction)
+        checkbox.stateChanged.connect(self._enable_friction_checkbox_changed)
+        return checkbox
 
     def _enable_friction_checkbox_changed(self, event):
         self.parent().send_event(Event(Event.SET_FRICTION,
                                        self.enable_friction_checkbox.isChecked()))
+        
+    def _create_max_angular_step_slider(self):
+        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        slider.setRange(0, SLIDER_PRECISION)
+        slider.setSingleStep(1)
+        slider.setValue(self.args.max_angular_step * SLIDER_PRECISION)
+        slider.valueChanged.connect(lambda value: self._on_changed_max_angular_step_slider())
+        return slider
+
+    def _on_changed_max_angular_step_slider(self):
+        max_angular_step = float(self._max_angular_step_slider.value()) / SLIDER_PRECISION
+        self.parent().send_event(Event(Event.SET_MAX_ANGULAR_STEP, max_angular_step))
 
     def add_learning_tab_widget(self, parent):
         if self.parent().student.supports_incremental_learning():
