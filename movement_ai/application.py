@@ -76,7 +76,8 @@ class Application:
             self._student.train([self._input])
             self._training_data.append(self._input)
             self._student.probe(self._training_data)
-                
+            self.on_training_data_changed()
+        
         for avatar in self._avatars:
             if self._input is not None and self._student.supports_incremental_learning():
                 avatar.behavior.set_normalized_observed_reductions(self._student.normalized_observed_reductions)
@@ -100,6 +101,13 @@ class Application:
         if self.show_fps:
             self._fps_meter.update()
 
+    @property
+    def training_data_size(self):
+        return len(self._training_data)
+
+    def on_training_data_changed(self):
+        pass
+    
     def _send_output(self, avatar, output):
         self._output_sender.send_frame(avatar.index, output, avatar.entity)
 
@@ -121,12 +129,23 @@ class BaseUiWindow(QtGui.QWidget):
         self._master_behavior = master_behavior
         self._control_layout = ControlLayout()
         self.setLayout(self._control_layout.layout)
+        self._add_training_data_size_label()
         self._create_menu()
+
+        application.on_training_data_changed = self._update_training_data_size_label
         
         timer = QtCore.QTimer(self)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
         timer.start()
 
+    def _add_training_data_size_label(self):
+        self._control_layout.add_label("Training data size")
+        self._training_data_size_label = QtGui.QLabel("")
+        self._control_layout.add_control_widget(self._training_data_size_label)
+
+    def _update_training_data_size_label(self):
+        self._training_data_size_label.setText("%d" % self._application.training_data_size)
+        
     def _create_menu(self):
         self._menu_bar = QtGui.QMenuBar()
         self._control_layout.layout.setMenuBar(self._menu_bar)
