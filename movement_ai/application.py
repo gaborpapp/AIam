@@ -50,8 +50,8 @@ class Application:
         self._desired_frame_duration = 1.0 / self._args.frame_rate
         self._frame_count = 0
         self._previous_frame_time = None
-        if self._args.show_fps:
-            self._fps_meter = FpsMeter()
+        self.show_fps = args.show_fps
+        self._fps_meter = FpsMeter()
             
     def run(self):
         while True:
@@ -97,7 +97,7 @@ class Application:
 
         self._previous_frame_time = now
         self._frame_count += 1
-        if self._args.show_fps:
+        if self.show_fps:
             self._fps_meter.update()
 
     def _send_output(self, avatar, output):
@@ -132,8 +132,20 @@ class BaseUiWindow(QtGui.QWidget):
     def _create_main_menu(self):
         self._main_menu = self._menu_bar.addMenu("&Main")
         self._add_reset_output_sender_action()
+        self._add_show_fps_action()
 
     def _add_reset_output_sender_action(self):
         action = QtGui.QAction('Reset OSC sender', self)
         action.triggered.connect(self._application.reset_output_sender)
         self._main_menu.addAction(action)
+
+    def _add_show_fps_action(self):
+        self._show_fps_action = QtGui.QAction("Show frame rate", self)
+        self._show_fps_action.setCheckable(True)
+        self._show_fps_action.setChecked(self._application.show_fps)
+        self._show_fps_action.triggered.connect(self._on_changed_show_fps)
+        self._main_menu.addAction(self._show_fps_action)
+
+    def _on_changed_show_fps(self):
+        self._application.show_fps = self._show_fps_action.isChecked()
+        
