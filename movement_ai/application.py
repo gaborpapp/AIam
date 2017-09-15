@@ -133,6 +133,7 @@ class BaseUiWindow(QtGui.QWidget):
         self._main_menu = self._menu_bar.addMenu("&Main")
         self._add_reset_output_sender_action()
         self._add_show_fps_action()
+        self._add_quit_action()
 
     def _add_reset_output_sender_action(self):
         action = QtGui.QAction('Reset OSC sender', self)
@@ -148,4 +149,9 @@ class BaseUiWindow(QtGui.QWidget):
 
     def _on_changed_show_fps(self):
         self._application.show_fps = self._show_fps_action.isChecked()
+        
+    def _add_quit_action(self):
+        action = QtGui.QAction("&Quit", self)
+        action.triggered.connect(QtGui.QApplication.exit)
+        self._main_menu.addAction(action)
         
