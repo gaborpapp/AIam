@@ -2,9 +2,11 @@ import time
 import numpy
 import random
 import collections
+from PyQt4 import QtGui, QtCore
 
 from entities.hierarchical import Entity
 from fps_meter import FpsMeter
+from ui.control_layout import ControlLayout
 
 class Avatar:
     def __init__(self, index, entity, behavior):
@@ -105,4 +107,33 @@ class Application:
         frame_duration = time.time() - self._frame_start_time
         if frame_duration < self._desired_frame_duration:
             time.sleep(self._desired_frame_duration - frame_duration)
+
+    def reset_output_sender(self):
+        self._output_sender.reset()
         
+class BaseUiWindow(QtGui.QWidget):
+    def __init__(self, application, master_behavior):
+        QtGui.QWidget.__init__(self)
+        self._application = application
+        self._master_behavior = master_behavior
+        self._control_layout = ControlLayout()
+        self.setLayout(self._control_layout.layout)
+        self._create_menu()
+        
+        timer = QtCore.QTimer(self)
+        QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
+        timer.start()
+
+    def _create_menu(self):
+        self._menu_bar = QtGui.QMenuBar()
+        self._control_layout.layout.setMenuBar(self._menu_bar)
+        self._create_main_menu()
+
+    def _create_main_menu(self):
+        self._main_menu = self._menu_bar.addMenu("&Main")
+        self._add_reset_output_sender_action()
+
+    def _add_reset_output_sender_action(self):
+        action = QtGui.QAction('Reset OSC sender', self)
+        action.triggered.connect(self._application.reset_output_sender)
+        self._main_menu.addAction(action)

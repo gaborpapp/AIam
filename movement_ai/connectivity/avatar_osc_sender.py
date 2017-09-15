@@ -2,7 +2,12 @@ from connectivity.simple_osc_sender import OscSender
 
 class AvatarOscSender:
     def __init__(self, host, port):
-        self._osc_sender = OscSender(host, port)
+        self._host = host
+        self._port = port
+        self.reset()
+
+    def reset(self):
+        self._osc_sender = OscSender(self._host, self._port)
         self._frame_index = 0
             
 class AvatarOscWorldSender(AvatarOscSender):
@@ -19,6 +24,9 @@ class AvatarOscWorldSender(AvatarOscSender):
 class AvatarOscBvhSender(AvatarOscSender):
     def __init__(self, *args, **kwargs):
         AvatarOscSender.__init__(self, *args, **kwargs)
+
+    def reset(self):
+        AvatarOscSender.reset(self)
         self._sent_joint_ids = False
         
     def send_frame(self, avatar_index, output, entity):

@@ -39,7 +39,7 @@ from PyQt4 import QtGui, QtCore
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/..")
-from application import Application, Avatar
+from application import Application, Avatar, BaseUiWindow
 from entities.hierarchical import Entity
 from bvh.bvh_reader import BvhReader
 from dimensionality_reduction.behavior import Behavior
@@ -48,7 +48,6 @@ from dimensionality_reduction.factory import DimensionalityReductionFactory
 import tracking.pn.receiver
 from delay_shift import SmoothedDelayShift
 from chaining import Chainer
-from ui.control_layout import ControlLayout
 
 parser = ArgumentParser()
 parser.add_argument("--pn-host", default="localhost")
@@ -400,23 +399,15 @@ class SwitchingBehavior(Behavior):
     def _combine_translation_and_orientation(self, translation, orientations):
         return numpy.array(list(translation) + list(orientations))
     
-class UiWindow(QtGui.QWidget):
+class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
-        QtGui.QWidget.__init__(self)
-        self._master_behavior = master_behavior
-        self._control_layout = ControlLayout()
-        self.setLayout(self._control_layout.layout)
-
+        super(UiWindow, self).__init__(application, master_behavior)
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_io_blending_control()
         self._add_model_control()
         self._add_mode_controls()
         self._add_delay_shift_control()
-        
-        timer = QtCore.QTimer(self)
-        QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
-        timer.start()
 
     def _add_learning_rate_control(self):
         self._control_layout.add_label("Learning rate")

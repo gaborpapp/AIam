@@ -37,7 +37,7 @@ from PyQt4 import QtGui, QtCore
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/..")
-from application import Application, Avatar
+from application import Application, Avatar, BaseUiWindow
 from entities.hierarchical import Entity
 from bvh.bvh_reader import BvhReader
 from dimensionality_reduction.behavior import Behavior
@@ -45,7 +45,6 @@ from dimensionality_reduction.behaviors.improvise import ImproviseParameters, Im
 from dimensionality_reduction.factory import DimensionalityReductionFactory
 import tracking.pn.receiver
 from ui.parameters_form import ParametersForm
-from ui.control_layout import ControlLayout
 
 parser = ArgumentParser()
 parser.add_argument("--pn-host", default="localhost")
@@ -141,12 +140,9 @@ class Recall:
     def get_output(self):
         return memory.frames[self._cursor]
 
-class UiWindow(QtGui.QWidget):
+class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
-        QtGui.QWidget.__init__(self)
-        self._control_layout = ControlLayout()
-        self.setLayout(self._control_layout.layout)
-
+        super(UiWindow, self).__init__(application, master_behavior)
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
@@ -154,10 +150,6 @@ class UiWindow(QtGui.QWidget):
         self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
         self._add_input_only_control()
-        
-        timer = QtCore.QTimer(self)
-        QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
-        timer.start()
     
     def _add_learning_rate_control(self):
         self._control_layout.add_label("Learning rate")
