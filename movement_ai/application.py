@@ -108,6 +108,9 @@ class Application:
         if frame_duration < self._desired_frame_duration:
             time.sleep(self._desired_frame_duration - frame_duration)
 
+    def reset_student(self):
+        self._student.reset()
+        
     def reset_output_sender(self):
         self._output_sender.reset()
         
@@ -131,10 +134,16 @@ class BaseUiWindow(QtGui.QWidget):
 
     def _create_main_menu(self):
         self._main_menu = self._menu_bar.addMenu("&Main")
+        self._add_reset_model_action()
         self._add_reset_output_sender_action()
         self._add_show_fps_action()
         self._add_quit_action()
 
+    def _add_reset_model_action(self):
+        action = QtGui.QAction("Reset model", self)
+        action.triggered.connect(self._application.reset_student)
+        self._main_menu.addAction(action)
+        
     def _add_reset_output_sender_action(self):
         action = QtGui.QAction('Reset OSC sender', self)
         action.triggered.connect(self._application.reset_output_sender)

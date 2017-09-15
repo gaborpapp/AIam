@@ -102,23 +102,18 @@ class AutoEncoder(DimensionalityReduction):
         next_layer_input = self._input_layer
 
         self._encoding_matrices = []
+        self._weight_tensors = []
         if len(self.args.num_hidden_nodes) == 0 or self.args.num_hidden_nodes == [0]:
             self._layer_sizes = [self.num_reduced_dimensions]
         else:
             self._layer_sizes = self.args.num_hidden_nodes + [self.num_reduced_dimensions]
         for dim in self._layer_sizes:
             input_dim = int(next_layer_input.get_shape()[1])
-            W = tf.Variable(self._random_weights(input_dim, dim))
-
-            # Initialize b to zero
+            weight_tensor = self._random_weights(input_dim, dim)
+            self._weight_tensors.append(weight_tensor)
             b = tf.Variable(tf.zeros([dim]))
-
-            # We are going to use tied-weights so store the W matrix for later reference.
-            self._encoding_matrices.append(W)
-
-            output = tf.matmul(next_layer_input,W) + b
-
-            # the input into the next layer is the output of this layer
+            self._encoding_matrices.append(weight_tensor.variable)
+            output = tf.matmul(next_layer_input, weight_tensor.variable) + b
             next_layer_input = output
 
         # The fully encoded x value is now stored in the next_layer_input
@@ -134,7 +129,9 @@ class AutoEncoder(DimensionalityReduction):
             if self.args.tied_weights:
                 W = tf.transpose(self._encoding_matrices[i])
             else:
-                W = tf.Variable(self._random_weights(input_dim, dim))
+                weight_tensor = self._random_weights(input_dim, dim)
+                W = weight_tensor.variable
+                self._weight_tensors.append(weight_tensor)
             self._decoding_matrices.append(W)
             b = tf.Variable(tf.zeros([dim]))
             summed_inputs = tf.matmul(next_layer_input,W) + b
@@ -150,10 +147,11 @@ class AutoEncoder(DimensionalityReduction):
         self._cost = tf.sqrt(tf.reduce_mean(tf.square(self._input_layer-self._reconstructed_input)))
 
     def _random_weights(self, input_dim, output_dim):
-        return tf.random_uniform(
+        tensor = tf.random_uniform(
             [input_dim, output_dim],
             -1.0 / math.sqrt(input_dim),
             1.0 / math.sqrt(input_dim))
+        return WeightTensor(tensor)
 
     def transform(self, observations):
         with self._graph.as_default():
@@ -183,19 +181,19 @@ class AutoEncoder(DimensionalityReduction):
         return True
     
     def add_noise(self, amount):
-        if len(self._layer_sizes) > 1:
-            raise Exception("AutoEncoder.add_noise only supports single-layer networks")
-
         with self._graph.as_default():
-            input_dim = int(self._input_layer.get_shape()[1])
-            dim = self._layer_sizes[0]
-            
-            W = self._encoding_matrices[0]
-            op = W.assign_add(tf.random_uniform([input_dim, dim], -amount, amount), use_locking=True)
+            for weight_tensor in self._weight_tensors:
+                op = weight_tensor.variable.assign_add(
+                    tf.random_uniform(weight_tensor.variable.shape, -amount, amount),
+                    use_locking=True)
+                self._sess.run(op)
+
+    def reset(self):
+        for weight_tensor in self._weight_tensors:
+            op = weight_tensor.variable.assign(weight_tensor.tensor)
             self._sess.run(op)
 
-            if not self.args.tied_weights:
-                W = self._decoding_matrices[0]
-                op = W.assign_add(tf.random_uniform([input_dim, dim], -amount, amount), use_locking=True)
-                self._sess.run(op)
-            
+class WeightTensor:
+    def __init__(self, tensor):
+        self.tensor = tensor
+        self.variable = tf.Variable(tensor)

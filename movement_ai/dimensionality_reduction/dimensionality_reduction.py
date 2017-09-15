@@ -83,3 +83,6 @@ class DimensionalityReduction:
     def supports_incremental_learning(self):
         return False
     
+    def reset(self):
+        pass
+    
