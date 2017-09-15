@@ -30,6 +30,6 @@ class FpsMeter:
             self._calculate_and_show_fps()
 
     def _calculate_and_show_fps(self):
-        print sum(self._fps_history) / len(self._fps_history)
+        print "FPS: %.1f" % (sum(self._fps_history) / len(self._fps_history))
         self._previous_shown_fps_time = self._stopwatch.get_elapsed_time()
 
