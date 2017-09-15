@@ -478,6 +478,7 @@ class UiWindow(BaseUiWindow):
         for model_name in MODELS:
             combobox.addItem(model_name)
         combobox.activated.connect(self._changed_model)
+        combobox.setCurrentIndex(combobox.findText(args.model))
         return combobox
 
     def _changed_model(self, value):
