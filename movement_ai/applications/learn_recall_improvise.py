@@ -58,6 +58,7 @@ parser.add_argument("--recall-duration", type=float, default=3)
 parser.add_argument("--reverse-recall-probability", type=float, default=0)
 parser.add_argument("--learning-rate", type=float, default=0.0)
 parser.add_argument("--memorize", action="store_true")
+parser.add_argument("--auto-friction", action="store_true")
 Application.add_parser_arguments(parser)
 ImproviseParameters().add_parser_arguments(parser)
 args = parser.parse_args()
@@ -143,10 +144,13 @@ class Recall:
 class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
         super(UiWindow, self).__init__(application, master_behavior)
+        application.on_friction_changed = self._update_friction_checkbox
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
         self._add_model_control()
+        self._add_auto_friction_control()
+        self._add_friction_control()
         self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
         self._add_input_only_control()
@@ -228,6 +232,30 @@ class UiWindow(BaseUiWindow):
     def _changed_model(self, value):
         set_model(MODELS[value])
 
+    def _add_auto_friction_control(self):
+        self._control_layout.add_label("Auto friction")
+        self._auto_friction_checkbox = QtGui.QCheckBox()
+        self._auto_friction_checkbox.setChecked(args.auto_friction)
+        self._auto_friction_checkbox.stateChanged.connect(self._on_changed_auto_friction)
+        self._control_layout.add_control_widget(self._auto_friction_checkbox)
+
+    def _on_changed_auto_friction(self):
+        master_behavior.auto_friction = self._auto_friction_checkbox.isChecked()
+        self._friction_checkbox.setEnabled(not master_behavior.auto_friction)
+
+    def _add_friction_control(self):
+        self._control_layout.add_label("Friction")
+        self._friction_checkbox = QtGui.QCheckBox()
+        self._friction_checkbox.setEnabled(not args.auto_friction)
+        self._friction_checkbox.stateChanged.connect(self._on_changed_friction)
+        self._control_layout.add_control_widget(self._friction_checkbox)
+
+    def _on_changed_friction(self):
+        master_entity.set_friction(self._friction_checkbox.isChecked())
+
+    def _update_friction_checkbox(self, value):
+        self._friction_checkbox.setChecked(value)
+        
     def _add_improvise_parameters_form(self):
         parameters_form = ParametersForm(improvise_params, control_layout=self._control_layout)
 
@@ -245,6 +273,7 @@ class MasterBehavior(Behavior):
         Behavior.__init__(self)
         self._recall_amount = args.recall_amount
         self.memorize = args.memorize
+        self.auto_friction = args.auto_friction
         self.input_only = False
         self._input = None
 
@@ -257,11 +286,16 @@ class MasterBehavior(Behavior):
     def proceed(self, time_increment):
         self._improvise.proceed(time_increment)
         recall_behavior.proceed(time_increment)
-        if self._recall_amount < 0.5:
-            master_entity.set_friction(True)
-        else:
-            master_entity.set_friction(False)
-        
+        if self.auto_friction:
+            if self._recall_amount < 0.5:
+                self._set_master_entity_friction_and_update_ui(True)
+            else:
+                self._set_master_entity_friction_and_update_ui(False)
+
+    def _set_master_entity_friction_and_update_ui(self, value):
+        master_entity.set_friction(value)
+        application.on_friction_changed(value)
+                
     def sends_output(self):
         return True
 

@@ -121,6 +121,9 @@ class Application:
         
     def reset_output_sender(self):
         self._output_sender.reset()
+
+    def on_changed_friction(self, value):
+        pass
         
 class BaseUiWindow(QtGui.QWidget):
     def __init__(self, application, master_behavior):
