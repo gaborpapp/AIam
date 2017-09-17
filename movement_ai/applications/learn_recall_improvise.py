@@ -144,7 +144,6 @@ class Recall:
 class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
         super(UiWindow, self).__init__(application, master_behavior)
-        application.on_friction_changed = self._update_friction_checkbox
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
@@ -156,117 +155,111 @@ class UiWindow(BaseUiWindow):
         self._add_input_only_control()
     
     def _add_learning_rate_control(self):
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(args.learning_rate / MAX_LEARNING_RATE * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_value)
+            return slider
+    
+        def on_changed_value(value):
+            learning_rate = float(value) / SLIDER_PRECISION * MAX_LEARNING_RATE
+            students["autoencoder"].set_learning_rate(learning_rate)
+
         self._control_layout.add_label("Learning rate")
-        self._learning_rate_slider = self._create_learning_rate_slider()
-        self._control_layout.add_control_widget(self._learning_rate_slider)
+        self._control_layout.add_control_widget(create_slider())
         
-    def _create_learning_rate_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        slider.setRange(0, SLIDER_PRECISION)
-        slider.setSingleStep(1)
-        slider.setValue(args.learning_rate / MAX_LEARNING_RATE * SLIDER_PRECISION)
-        slider.valueChanged.connect(lambda value: self._on_changed_learning_rate_slider())
-        return slider
-
-    def _on_changed_learning_rate_slider(self):
-        learning_rate = float(self._learning_rate_slider.value()) / SLIDER_PRECISION * MAX_LEARNING_RATE
-        students["autoencoder"].set_learning_rate(learning_rate)
-
     def _add_memorize_control(self):
+        def on_changed_state(checkbox):
+            master_behavior.memorize = checkbox.isChecked()
+            
         self._control_layout.add_label("Memorize")
-        self._memorize_checkbox = QtGui.QCheckBox()
-        self._memorize_checkbox.setChecked(args.memorize)
-        self._memorize_checkbox.stateChanged.connect(self._on_changed_memorize)
-        self._control_layout.add_control_widget(self._memorize_checkbox)
-
-    def _on_changed_memorize(self):
-        master_behavior.memorize = self._memorize_checkbox.isChecked()
+        checkbox = QtGui.QCheckBox()
+        checkbox.setChecked(args.memorize)
+        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
+        self._control_layout.add_control_widget(checkbox)
 
     def _add_recall_amount_control(self):
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(args.recall_amount * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_value)
+            return slider
+
+        def on_changed_value(value):
+            recall_amount = float(value) / SLIDER_PRECISION
+            master_behavior.set_recall_amount(recall_amount)
+
         self._control_layout.add_label("Recall amount")
-        self._recall_amount_slider = self._create_recall_amount_slider()
-        self._control_layout.add_control_widget(self._recall_amount_slider)
+        self._control_layout.add_control_widget(create_slider())
         
-    def _create_recall_amount_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        slider.setRange(0, SLIDER_PRECISION)
-        slider.setSingleStep(1)
-        slider.setValue(args.recall_amount * SLIDER_PRECISION)
-        slider.valueChanged.connect(lambda value: self._on_changed_recall_amount_slider())
-        return slider
-
-    def _on_changed_recall_amount_slider(self):
-        recall_amount = float(self._recall_amount_slider.value()) / SLIDER_PRECISION
-        master_behavior.set_recall_amount(recall_amount)
-
     def _add_max_angular_step_control(self):
-        self._control_layout.add_label("Max angular step")
-        self._max_angular_step_slider = self._create_max_angular_step_slider()
-        self._control_layout.add_control_widget(self._max_angular_step_slider)
-        
-    def _create_max_angular_step_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        slider.setRange(0, SLIDER_PRECISION)
-        slider.setSingleStep(1)
-        slider.setValue(args.max_angular_step * SLIDER_PRECISION)
-        slider.valueChanged.connect(lambda value: self._on_changed_max_angular_step_slider())
-        return slider
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(args.max_angular_step * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_value)
+            return slider
 
-    def _on_changed_max_angular_step_slider(self):
-        max_angular_step = float(self._max_angular_step_slider.value()) / SLIDER_PRECISION
-        set_max_angular_step(max_angular_step)
+        def on_changed_value(value):
+            max_angular_step = float(value) / SLIDER_PRECISION
+            set_max_angular_step(max_angular_step)
+
+        self._control_layout.add_label("Max angular step")
+        self._control_layout.add_control_widget(create_slider())
         
     def _add_model_control(self):
-        model_combobox = self._create_model_combobox()
+        def create_combobox():
+            combobox = QtGui.QComboBox()
+            for model_name in MODELS:
+                combobox.addItem(model_name)
+            combobox.activated.connect(on_activated)
+            combobox.setCurrentIndex(combobox.findText(args.model))
+            return combobox
+
+        def on_activated(value):
+            set_model(MODELS[value])
+
         self._control_layout.add_label("Model")
-        self._control_layout.add_control_widget(model_combobox)
+        self._control_layout.add_control_widget(create_combobox())
         
-    def _create_model_combobox(self):
-        combobox = QtGui.QComboBox()
-        for model_name in MODELS:
-            combobox.addItem(model_name)
-        combobox.activated.connect(self._changed_model)
-        combobox.setCurrentIndex(combobox.findText(args.model))
-        return combobox
-
-    def _changed_model(self, value):
-        set_model(MODELS[value])
-
     def _add_auto_friction_control(self):
-        self._control_layout.add_label("Auto friction")
-        self._auto_friction_checkbox = QtGui.QCheckBox()
-        self._auto_friction_checkbox.setChecked(args.auto_friction)
-        self._auto_friction_checkbox.stateChanged.connect(self._on_changed_auto_friction)
-        self._control_layout.add_control_widget(self._auto_friction_checkbox)
+        def on_changed_state(checkbox):
+            master_behavior.auto_friction = checkbox.isChecked()
+            self._friction_checkbox.setEnabled(not master_behavior.auto_friction)
 
-    def _on_changed_auto_friction(self):
-        master_behavior.auto_friction = self._auto_friction_checkbox.isChecked()
-        self._friction_checkbox.setEnabled(not master_behavior.auto_friction)
+        self._control_layout.add_label("Auto friction")
+        checkbox = QtGui.QCheckBox()
+        checkbox.setChecked(args.auto_friction)
+        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
+        self._control_layout.add_control_widget(checkbox)
 
     def _add_friction_control(self):
+        def on_changed_state():
+            master_entity.set_friction(self._friction_checkbox.isChecked())
+
         self._control_layout.add_label("Friction")
         self._friction_checkbox = QtGui.QCheckBox()
         self._friction_checkbox.setEnabled(not args.auto_friction)
-        self._friction_checkbox.stateChanged.connect(self._on_changed_friction)
+        self._friction_checkbox.stateChanged.connect(on_changed_state)
+        self._application.on_friction_changed = lambda value: self._friction_checkbox.setChecked(value)
         self._control_layout.add_control_widget(self._friction_checkbox)
 
-    def _on_changed_friction(self):
-        master_entity.set_friction(self._friction_checkbox.isChecked())
-
-    def _update_friction_checkbox(self, value):
-        self._friction_checkbox.setChecked(value)
-        
     def _add_improvise_parameters_form(self):
         parameters_form = ParametersForm(improvise_params, control_layout=self._control_layout)
 
     def _add_input_only_control(self):
-        self._control_layout.add_label("Input only")
-        self._input_only_checkbox = QtGui.QCheckBox()
-        self._input_only_checkbox.stateChanged.connect(self._on_changed_input_only)
-        self._control_layout.add_control_widget(self._input_only_checkbox)
+        def on_changed_state(checkbox):
+            master_behavior.input_only = checkbox.isChecked()
 
-    def _on_changed_input_only(self):
-        master_behavior.input_only = self._input_only_checkbox.isChecked()
+        self._control_layout.add_label("Input only")
+        checkbox = QtGui.QCheckBox()
+        checkbox.stateChanged.connect(on_changed_state)
+        self._control_layout.add_control_widget(checkbox)
 
 class MasterBehavior(Behavior):
     def __init__(self):

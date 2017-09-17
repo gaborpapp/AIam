@@ -410,30 +410,29 @@ class UiWindow(BaseUiWindow):
         self._add_delay_shift_control()
 
     def _add_learning_rate_control(self):
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(args.learning_rate / MAX_LEARNING_RATE * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_value)
+            return slider
+    
+        def on_changed_value(value):
+            learning_rate = float(value) / SLIDER_PRECISION * MAX_LEARNING_RATE
+            students["autoencoder"].set_learning_rate(learning_rate)
+
         self._control_layout.add_label("Learning rate")
-        self._learning_rate_slider = self._create_learning_rate_slider()
-        self._control_layout.add_control_widget(self._learning_rate_slider)
+        self._control_layout.add_control_widget(create_slider())
         
-    def _create_learning_rate_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        slider.setRange(0, SLIDER_PRECISION)
-        slider.setSingleStep(1)
-        slider.setValue(args.learning_rate / MAX_LEARNING_RATE * SLIDER_PRECISION)
-        slider.valueChanged.connect(lambda value: self._on_changed_learning_rate_slider())
-        return slider
-
-    def _on_changed_learning_rate_slider(self):
-        learning_rate = float(self._learning_rate_slider.value()) / SLIDER_PRECISION * MAX_LEARNING_RATE
-        students["autoencoder"].set_learning_rate(learning_rate)
-
     def _add_memorize_control(self):
+        def on_changed_state(checkbox):
+            switching_behavior.memorize = checkbox.isChecked()
+            
         self._control_layout.add_label("Memorize")
-        self._memorize_checkbox = QtGui.QCheckBox()
-        self._memorize_checkbox.stateChanged.connect(self._on_changed_memorize)
-        self._control_layout.add_control_widget(self._memorize_checkbox)
-
-    def _on_changed_memorize(self):
-        switching_behavior.memorize = self._memorize_checkbox.isChecked()
+        checkbox = QtGui.QCheckBox()
+        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
+        self._control_layout.add_control_widget(checkbox)
         
     def _mode_enabled_in_args(self, mode):
         enabled_arg = "enable_%s" % mode
@@ -443,85 +442,73 @@ class UiWindow(BaseUiWindow):
         switching_behavior.set_mode_enabled(mode, checkbox.isChecked())
 
     def _add_io_blending_control(self):
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(args.io_blending_amount * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_value)
+            return slider
+
+        def on_changed_value(value):
+            io_blending_amount = float(value) / SLIDER_PRECISION
+            self._master_behavior.set_io_blending_amount(io_blending_amount)
+
         self._control_layout.add_label("IO blending")
-        self._io_blending_slider = self._create_io_blending_slider()
-        self._control_layout.add_control_widget(self._io_blending_slider)
-        self._on_changed_io_blending_slider()
-
-    def _add_label(self, string):
-        label = QtGui.QLabel(string)
-        self._layout.addWidget(label, self._row, 0)
-
-    def _add_control_widget(self, widget):
-        self._layout.addWidget(widget, self._row, 1)
-        self._row += 1
-        
-    def _create_io_blending_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        slider.setRange(0, SLIDER_PRECISION)
-        slider.setSingleStep(1)
-        slider.setValue(args.io_blending_amount * SLIDER_PRECISION)
-        slider.valueChanged.connect(lambda value: self._on_changed_io_blending_slider())
-        return slider
-
-    def _on_changed_io_blending_slider(self):
-        io_blending_amount = float(self._io_blending_slider.value()) / SLIDER_PRECISION
-        self._master_behavior.set_io_blending_amount(io_blending_amount)
+        self._control_layout.add_control_widget(create_slider())
 
     def _add_model_control(self):
-        model_combobox = self._create_model_combobox()
+        def create_combobox():
+            combobox = QtGui.QComboBox()
+            for model_name in MODELS:
+                combobox.addItem(model_name)
+            combobox.activated.connect(on_activated)
+            combobox.setCurrentIndex(combobox.findText(args.model))
+            return combobox
+
+        def on_activated(value):
+            set_model(MODELS[value])
+
         self._control_layout.add_label("Model")
-        self._control_layout.add_control_widget(model_combobox)
+        self._control_layout.add_control_widget(create_combobox())
         
-    def _create_model_combobox(self):
-        combobox = QtGui.QComboBox()
-        for model_name in MODELS:
-            combobox.addItem(model_name)
-        combobox.activated.connect(self._changed_model)
-        combobox.setCurrentIndex(combobox.findText(args.model))
-        return combobox
-
-    def _changed_model(self, value):
-        set_model(MODELS[value])
-
     def _add_mode_controls(self):
-        self._add_mode_control("Mirror", SwitchingBehavior.MIRROR)
-        self._add_mode_control("Recall", SwitchingBehavior.RECALL)
-        self._add_mode_control("Improvise", SwitchingBehavior.IMPROVISE)
+        def add_mode_control(name, mode):
+            self._control_layout.add_label(name)
+            self._control_layout.add_control_widget(create_mode_checkbox(mode))
 
-    def _add_mode_control(self, name, mode):
-        self._control_layout.add_label(name)
-        self._control_layout.add_control_widget(self._create_mode_checkbox(mode))
+        def create_mode_checkbox(mode):
+            checkbox = QtGui.QCheckBox()
+            checkbox.setChecked(mode_enabled_in_args(mode) > 0)
+            checkbox.stateChanged.connect(lambda event: mode_checkbox_changed(mode, checkbox))
+            return checkbox
 
-    def _create_mode_checkbox(self, mode):
-        checkbox = QtGui.QCheckBox()
-        checkbox.setChecked(self._mode_enabled_in_args(mode) > 0)
-        checkbox.stateChanged.connect(lambda event: self._mode_checkbox_changed(mode, checkbox))
-        return checkbox
-    
-    def _mode_enabled_in_args(self, mode):
-        enabled_arg = "enable_%s" % mode
-        return getattr(args, enabled_arg)
+        def mode_enabled_in_args(mode):
+            enabled_arg = "enable_%s" % mode
+            return getattr(args, enabled_arg)
 
-    def _mode_checkbox_changed(self, mode, checkbox):
-        switching_behavior.set_mode_enabled(mode, checkbox.isChecked())
+        def mode_checkbox_changed(mode, checkbox):
+            switching_behavior.set_mode_enabled(mode, checkbox.isChecked())
+
+        add_mode_control("Mirror", SwitchingBehavior.MIRROR)
+        add_mode_control("Recall", SwitchingBehavior.RECALL)
+        add_mode_control("Improvise", SwitchingBehavior.IMPROVISE)
 
     def _add_delay_shift_control(self):
-        self._control_layout.add_label("Delay shift")
-        self._delay_shift_slider = self._create_delay_shift_slider()
-        self._control_layout.add_control_widget(self._delay_shift_slider)
-        
-    def _create_delay_shift_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        slider.setRange(0, SLIDER_PRECISION)
-        slider.setSingleStep(1)
-        slider.setValue(args.delay_shift * SLIDER_PRECISION)
-        slider.valueChanged.connect(lambda value: self._on_changed_delay_shift_slider())
-        return slider
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(args.delay_shift * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_value)
+            return slider
 
-    def _on_changed_delay_shift_slider(self):
-        delay_shift_amount = float(self._delay_shift_slider.value()) / SLIDER_PRECISION
-        switching_behavior.set_delay_shift_amount(delay_shift_amount)
+        def on_changed_value(value):
+            delay_shift_amount = float(value) / SLIDER_PRECISION
+            switching_behavior.set_delay_shift_amount(delay_shift_amount)
+            
+        self._control_layout.add_label("Delay shift")
+        self._control_layout.add_control_widget(create_slider())
         
         
 class MasterBehavior(Behavior):
@@ -575,6 +562,7 @@ index = 0
 memory = Memory()
 switching_behavior = SwitchingBehavior()
 master_behavior = MasterBehavior()
+master_behavior.set_io_blending_amount(args.io_blending_amount)
 avatar = Avatar(index, master_entity, master_behavior)
 
 avatars = [avatar]
