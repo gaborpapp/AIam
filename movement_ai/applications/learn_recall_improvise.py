@@ -269,7 +269,7 @@ class UiWindow(BaseUiWindow):
 
         self._control_layout.add_label("Input only")
         checkbox = QtGui.QCheckBox()
-        checkbox.stateChanged.connect(on_changed_state)
+        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
         self._control_layout.add_control_widget(checkbox)
 
 class MasterBehavior(Behavior):
