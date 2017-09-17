@@ -2,9 +2,11 @@ import time
 import numpy
 import random
 import collections
+import threading
 from PyQt4 import QtGui, QtCore
 
 from entities.hierarchical import Entity
+import tracking.pn.receiver
 from fps_meter import FpsMeter
 from ui.control_layout import ControlLayout
 
@@ -17,6 +19,10 @@ class Avatar:
 class Application:
     @staticmethod
     def add_parser_arguments(parser):
+        parser.add_argument("--pn-host", default="localhost")
+        parser.add_argument("--pn-port", type=int, default=tracking.pn.receiver.SERVER_PORT_BVH)
+        parser.add_argument("--pn-convert-to-z-up", action="store_true")
+        parser.add_argument("--pn-translation-offset")
         parser.add_argument("--frame-rate", type=float, default=50.0)
         parser.add_argument("--show-fps", action="store_true")
         parser.add_argument("--output-receiver-host")
@@ -26,14 +32,18 @@ class Application:
         parser.add_argument("--memory-size", type=int, default=1000)
         Entity.add_parser_arguments(parser)
         
-    def __init__(self, student, avatars, args):
+    def __init__(self, student, avatars, args, receive_from_pn=False, create_entity=None):
         self._student = student
         self._avatars = avatars
         self._args = args
+        self._create_entity = create_entity
 
         if args.random_seed is not None:
             random.seed(args.random_seed)
 
+        if receive_from_pn:
+            self._setup_pn_connection()
+            
         if args.output_receiver_host:
             from connectivity import avatar_osc_sender
             if args.output_receiver_type == "world":
@@ -52,7 +62,32 @@ class Application:
         self._previous_frame_time = None
         self.show_fps = args.show_fps
         self._fps_meter = FpsMeter()
-            
+
+    def _setup_pn_connection(self):
+        if self._create_entity is None:
+            raise Exception("receive_from_pn requires create_entity to be defined")
+        
+        def receive_from_pn(pn_entity):
+            for frame in pn_receiver.get_frames():
+                input_from_pn = pn_entity.get_value_from_frame(
+                    frame, convert_to_z_up=self._args.pn_convert_to_z_up)
+                input_from_pn[0:3] += pn_translation_offset
+                self.set_input(input_from_pn)
+
+        pn_receiver = tracking.pn.receiver.PnReceiver()
+        print "connecting to PN server..."
+        pn_receiver.connect(self._args.pn_host, self._args.pn_port)
+        print "ok"
+        pn_entity = self._create_entity()
+        if self._args.pn_translation_offset:
+            pn_translation_offset = numpy.array(
+                [float(string) for string in self._args.pn_translation_offset.split(",")])
+        else:
+            pn_translation_offset = numpy.array([0,0,0])
+        pn_receiver_thread = threading.Thread(target=lambda: receive_from_pn(pn_entity))
+        pn_receiver_thread.daemon = True
+        pn_receiver_thread.start()
+
     def run(self):
         while True:
             self._frame_start_time = time.time()

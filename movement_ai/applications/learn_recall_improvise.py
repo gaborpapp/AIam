@@ -29,7 +29,6 @@ SLIDER_PRECISION = 1000
 MAX_LEARNING_RATE = 0.01
 
 from argparse import ArgumentParser
-import threading
 import numpy
 import random
 from PyQt4 import QtGui, QtCore
@@ -43,15 +42,10 @@ from bvh.bvh_reader import BvhReader
 from dimensionality_reduction.behavior import Behavior
 from dimensionality_reduction.behaviors.improvise import ImproviseParameters, Improvise
 from dimensionality_reduction.factory import DimensionalityReductionFactory
-import tracking.pn.receiver
 from ui.parameters_form import ParametersForm
 
 parser = ArgumentParser()
-parser.add_argument("--pn-host", default="localhost")
-parser.add_argument("--pn-port", type=int, default=tracking.pn.receiver.SERVER_PORT_BVH)
-parser.add_argument("--pn-convert-to-z-up", action="store_true")
 parser.add_argument("--model", choices=MODELS, default="pca")
-parser.add_argument("--pn-translation-offset")
 parser.add_argument("--with-ui", action="store_true")
 parser.add_argument("--recall-amount", type=float, default=0)
 parser.add_argument("--recall-duration", type=float, default=3)
@@ -454,30 +448,11 @@ avatar = Avatar(index, master_entity, master_behavior)
 
 avatars = [avatar]
 
-application = Application(students[args.model], avatars, args)
+application = Application(
+    students[args.model], avatars, args, receive_from_pn=True, create_entity=create_entity)
 
 set_model(args.model)
 set_max_angular_step(args.max_angular_step)
-
-def receive_from_pn(pn_entity):
-    for frame in pn_receiver.get_frames():
-        input_from_pn = pn_entity.get_value_from_frame(frame, convert_to_z_up=args.pn_convert_to_z_up)
-        input_from_pn[0:3] += pn_translation_offset
-        application.set_input(input_from_pn)
-        
-pn_receiver = tracking.pn.receiver.PnReceiver()
-print "connecting to PN server..."
-pn_receiver.connect(args.pn_host, args.pn_port)
-print "ok"
-pn_entity = create_entity()
-if args.pn_translation_offset:
-    pn_translation_offset = numpy.array(
-        [float(string) for string in args.pn_translation_offset.split(",")])
-else:
-    pn_translation_offset = numpy.array([0,0,0])
-pn_receiver_thread = threading.Thread(target=lambda: receive_from_pn(pn_entity))
-pn_receiver_thread.daemon = True
-pn_receiver_thread.start()
 
 if args.with_ui:
     qt_app = QtGui.QApplication(sys.argv)
