@@ -102,6 +102,9 @@ def set_max_angular_step(max_angular_step):
         
 class Memory:
     def __init__(self):
+        self.clear()
+
+    def clear(self):
         self.frames = []
 
     def on_input(self, input_):
@@ -144,6 +147,7 @@ class Recall:
 class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
         super(UiWindow, self).__init__(application, master_behavior)
+        self._create_memory_menu()
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
@@ -153,7 +157,20 @@ class UiWindow(BaseUiWindow):
         self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
         self._add_input_only_control()
-    
+
+    def _create_memory_menu(self):
+        self._memory_menu = self._menu_bar.addMenu("Memory")
+        self._add_clear_memory_action()
+
+    def _add_clear_memory_action(self):
+        def clear_memory():
+            recall_behavior.reset()
+            memory.clear()
+            
+        action = QtGui.QAction("Clear memory", self)
+        action.triggered.connect(clear_memory)
+        self._memory_menu.addAction(action)
+        
     def _add_learning_rate_control(self):
         def create_slider():
             slider = QtGui.QSlider(QtCore.Qt.Horizontal)
@@ -339,6 +356,9 @@ class RecallBehavior(Behavior):
         self._interpolation_num_frames = int(round(self.interpolation_duration * args.frame_rate))
         self._recall_num_frames_including_interpolation = self._recall_num_frames + \
                                                           2 * self._interpolation_num_frames
+        self.reset()
+
+    def reset(self):
         self._initialize_state(self.IDLE)
         self._output = None
 
