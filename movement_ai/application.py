@@ -45,7 +45,8 @@ class Application:
             random.seed(self._args.random_seed)
 
         if self.receive_from_pn:
-            self._setup_pn_connection()
+            self.on_pn_connection_status_changed(False)
+            self.try_connect_to_pn()
             
         if self._args.output_receiver_host:
             from connectivity import avatar_osc_sender
@@ -65,7 +66,7 @@ class Application:
         self._previous_frame_time = None
         self._fps_meter = FpsMeter()
 
-    def _setup_pn_connection(self):
+    def try_connect_to_pn(self):
         if self._create_entity is None:
             raise Exception("receive_from_pn requires create_entity to be defined")
         
@@ -75,7 +76,7 @@ class Application:
                     process_frame(frame)
             except tracking.pn.receiver.RemotePeerShutDown:
                 print "Lost connection to PN!"
-                self.on_pn_connection_status_changed("Disconnected")
+                self.on_pn_connection_status_changed(False)
 
         def process_frame(frame):
             input_from_pn = pn_entity.get_value_from_frame(
@@ -85,9 +86,13 @@ class Application:
 
         pn_receiver = tracking.pn.receiver.PnReceiver()
         print "connecting to PN server..."
-        pn_receiver.connect(self._args.pn_host, self._args.pn_port)
+        try:
+            pn_receiver.connect(self._args.pn_host, self._args.pn_port)
+        except Exception as exception:
+            print "Failed: %s" % exception
+            return
         print "ok"
-        self.on_pn_connection_status_changed("Connected")
+        self.on_pn_connection_status_changed(True)
         pn_entity = self._create_entity()
         if self._args.pn_translation_offset:
             pn_translation_offset = numpy.array(
@@ -206,8 +211,13 @@ class BaseUiWindow(QtGui.QWidget):
         self._control_layout.add_control_widget(self._pn_connection_status_label)
 
     def _update_pn_connection_status_label(self, status):
-        self._pn_connection_status_label.setText(status)
-        
+        if status == True:
+            self._pn_connection_status_label.setText("Connected")
+            self._pn_connection_status_label.setStyleSheet("QLabel { background-color : green; }")
+        else:
+            self._pn_connection_status_label.setText("Disconnected")
+            self._pn_connection_status_label.setStyleSheet("QLabel { background-color : red; }")
+            
     def _create_menu(self):
         self._menu_bar = QtGui.QMenuBar()
         self._control_layout.layout.setMenuBar(self._menu_bar)
@@ -215,11 +225,18 @@ class BaseUiWindow(QtGui.QWidget):
 
     def _create_main_menu(self):
         self._main_menu = self._menu_bar.addMenu("&Main")
+        if self._application.receive_from_pn:
+            self._add_connect_to_pn_action()
         self._add_reset_model_action()
         self._add_reset_output_sender_action()
         self._add_show_fps_action()
         self._add_quit_action()
 
+    def _add_connect_to_pn_action(self):
+        action = QtGui.QAction("Connect to PN", self)
+        action.triggered.connect(self._application.try_connect_to_pn)
+        self._main_menu.addAction(action)
+        
     def _add_reset_model_action(self):
         action = QtGui.QAction("Reset model", self)
         action.triggered.connect(self._application.reset_student)
