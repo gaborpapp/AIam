@@ -172,15 +172,15 @@ class BaseUiWindow(QtGui.QWidget):
         self._main_menu.addAction(action)
 
     def _add_show_fps_action(self):
-        self._show_fps_action = QtGui.QAction("Show frame rate", self)
-        self._show_fps_action.setCheckable(True)
-        self._show_fps_action.setChecked(self._application.show_fps)
-        self._show_fps_action.triggered.connect(self._on_changed_show_fps)
-        self._main_menu.addAction(self._show_fps_action)
-
-    def _on_changed_show_fps(self):
-        self._application.show_fps = self._show_fps_action.isChecked()
+        def on_triggered(checked):
+            self._application.show_fps = checked
         
+        action = QtGui.QAction("Show frame rate", self)
+        action.setCheckable(True)
+        action.setChecked(self._application.show_fps)
+        action.triggered.connect(lambda checked: on_triggered(checked))
+        self._main_menu.addAction(action)
+
     def _add_quit_action(self):
         action = QtGui.QAction("&Quit", self)
         action.triggered.connect(QtGui.QApplication.exit)
