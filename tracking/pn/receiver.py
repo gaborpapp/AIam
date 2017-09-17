@@ -10,6 +10,9 @@ SERVER_PORT_BVH = 7001
 
 import socket
 
+class RemotePeerShutDown(Exception):
+    pass
+
 class PnReceiver:
     def connect(self, host, port):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -29,8 +32,8 @@ class PnReceiver:
             while buffer.find(delim) != -1:
                 line, buffer = buffer.split(delim, 1)
                 yield line
-        return
-
+        raise RemotePeerShutDown()
+    
     def _process_pn_bvh_line(self, line):
         values_as_strings = line.split(" ")
         # print values_as_strings

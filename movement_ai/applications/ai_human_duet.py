@@ -570,6 +570,8 @@ if args.with_ui:
     qt_app = QtGui.QApplication(sys.argv)
     ui_window = UiWindow(master_behavior)
     ui_window.show()
+    application.initialize()
     qt_app.exec_()
 else:
+    application.initialize()
     application.run()

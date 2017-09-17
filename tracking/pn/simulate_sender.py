@@ -63,5 +63,6 @@ else:
     looper = NormalLooper(bvh_reader.get_num_frames())
 
 server = SocketServer.TCPServer(("localhost", args.port), PnSimulatorHandler)
+server.allow_reuse_address = True
 print "OK serving"
 server.serve_forever()

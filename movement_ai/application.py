@@ -36,31 +36,33 @@ class Application:
         self._student = student
         self._avatars = avatars
         self._args = args
+        self.receive_from_pn = receive_from_pn
         self._create_entity = create_entity
+        self.show_fps = args.show_fps
 
-        if args.random_seed is not None:
-            random.seed(args.random_seed)
+    def initialize(self):
+        if self._args.random_seed is not None:
+            random.seed(self._args.random_seed)
 
-        if receive_from_pn:
+        if self.receive_from_pn:
             self._setup_pn_connection()
             
-        if args.output_receiver_host:
+        if self._args.output_receiver_host:
             from connectivity import avatar_osc_sender
-            if args.output_receiver_type == "world":
+            if self._args.output_receiver_type == "world":
                 self._output_sender = avatar_osc_sender.AvatarOscWorldSender(
-                    args.output_receiver_port, args.output_receiver_host)
-            elif args.output_receiver_type == "bvh":
+                    self._args.output_receiver_port, self._args.output_receiver_host)
+            elif self._args.output_receiver_type == "bvh":
                 self._output_sender = avatar_osc_sender.AvatarOscBvhSender(
-                    args.output_receiver_port, args.output_receiver_host)
+                    self._args.output_receiver_port, self._args.output_receiver_host)
         else:
             self._output_sender = None
             
-        self._training_data = collections.deque([], maxlen=args.memory_size)
+        self._training_data = collections.deque([], maxlen=self._args.memory_size)
         self._input = None
         self._desired_frame_duration = 1.0 / self._args.frame_rate
         self._frame_count = 0
         self._previous_frame_time = None
-        self.show_fps = args.show_fps
         self._fps_meter = FpsMeter()
 
     def _setup_pn_connection(self):
@@ -68,16 +70,24 @@ class Application:
             raise Exception("receive_from_pn requires create_entity to be defined")
         
         def receive_from_pn(pn_entity):
-            for frame in pn_receiver.get_frames():
-                input_from_pn = pn_entity.get_value_from_frame(
-                    frame, convert_to_z_up=self._args.pn_convert_to_z_up)
-                input_from_pn[0:3] += pn_translation_offset
-                self.set_input(input_from_pn)
+            try:
+                for frame in pn_receiver.get_frames():
+                    process_frame(frame)
+            except tracking.pn.receiver.RemotePeerShutDown:
+                print "Lost connection to PN!"
+                self.on_pn_connection_status_changed("Disconnected")
+
+        def process_frame(frame):
+            input_from_pn = pn_entity.get_value_from_frame(
+                frame, convert_to_z_up=self._args.pn_convert_to_z_up)
+            input_from_pn[0:3] += pn_translation_offset
+            self.set_input(input_from_pn)
 
         pn_receiver = tracking.pn.receiver.PnReceiver()
         print "connecting to PN server..."
         pn_receiver.connect(self._args.pn_host, self._args.pn_port)
         print "ok"
+        self.on_pn_connection_status_changed("Connected")
         pn_entity = self._create_entity()
         if self._args.pn_translation_offset:
             pn_translation_offset = numpy.array(
@@ -88,7 +98,10 @@ class Application:
         pn_receiver_thread.daemon = True
         pn_receiver_thread.start()
 
-    def run(self):
+    def on_pn_connection_status_changed(self, status):
+        pass
+    
+    def main_loop(self):
         while True:
             self._frame_start_time = time.time()
             self.update()
@@ -167,10 +180,13 @@ class BaseUiWindow(QtGui.QWidget):
         self._master_behavior = master_behavior
         self._control_layout = ControlLayout()
         self.setLayout(self._control_layout.layout)
+        if application.receive_from_pn:
+            self._add_pn_connection_status()
         self._add_training_data_size_label()
         self._create_menu()
 
         application.on_training_data_changed = self._update_training_data_size_label
+        application.on_pn_connection_status_changed = self._update_pn_connection_status_label
         
         timer = QtCore.QTimer(self)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
@@ -183,6 +199,14 @@ class BaseUiWindow(QtGui.QWidget):
 
     def _update_training_data_size_label(self):
         self._training_data_size_label.setText("%d" % self._application.training_data_size)
+
+    def _add_pn_connection_status(self):
+        self._control_layout.add_label("PN connection")
+        self._pn_connection_status_label = QtGui.QLabel("")
+        self._control_layout.add_control_widget(self._pn_connection_status_label)
+
+    def _update_pn_connection_status_label(self, status):
+        self._pn_connection_status_label.setText(status)
         
     def _create_menu(self):
         self._menu_bar = QtGui.QMenuBar()
