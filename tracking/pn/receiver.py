@@ -13,6 +13,7 @@ import socket
 class RemotePeerShutDown(Exception):
     pass
 
+
 class PnReceiver:
     def connect(self, host, port):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,7 +23,7 @@ class PnReceiver:
         for line in self._readlines(delim='||'):
             yield self._process_pn_bvh_line(line)
 
-    def _readlines(self, buffer_size=4096, delim='\n'):
+    def _readlines(self, buffer_size=1024, delim='\n'):
         buffer = ''
         data = True
         while data:
