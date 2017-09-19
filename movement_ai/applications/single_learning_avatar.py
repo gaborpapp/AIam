@@ -58,4 +58,5 @@ avatars = [avatar]
 
 application = Application(student, avatars, args, receive_from_pn=True, create_entity=create_entity)
 application.initialize()
+application.start_learning_thread()
 application.run()

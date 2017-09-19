@@ -531,7 +531,9 @@ if args.with_ui:
     ui_window = UiWindow(master_behavior)
     ui_window.show()
     application.initialize()
+    application.start_learning_thread()
     qt_app.exec_()
 else:
     application.initialize()
+    application.start_learning_thread()
     application.run()

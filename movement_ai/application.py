@@ -23,13 +23,13 @@ class Application:
         parser.add_argument("--pn-port", type=int, default=tracking.pn.receiver.SERVER_PORT_BVH)
         parser.add_argument("--pn-convert-to-z-up", action="store_true")
         parser.add_argument("--pn-translation-offset")
-        parser.add_argument("--frame-rate", type=float, default=50.0)
+        parser.add_argument("--frame-rate", type=float, default=30.0)
         parser.add_argument("--show-fps", action="store_true")
         parser.add_argument("--output-receiver-host")
         parser.add_argument("--output-receiver-port", type=int, default=10000)
         parser.add_argument("--output-receiver-type", choices=["bvh", "world"], default="bvh")
         parser.add_argument("--random-seed", type=int)
-        parser.add_argument("--memory-size", type=int, default=1000)
+        parser.add_argument("--memory-size", type=int, default=500)
         Entity.add_parser_arguments(parser)
         
     def __init__(self, student, avatars, args, receive_from_pn=False, create_entity=None):
@@ -66,6 +66,24 @@ class Application:
         self._previous_frame_time = None
         self._fps_meter = FpsMeter()
 
+    def start_learning_thread(self):
+        thread = threading.Thread(target=self._learning_loop)
+        thread.daemon = True
+        thread.start()
+        
+    def _learning_loop(self):
+        while True:
+            input_ = self._input
+            student = self._student
+            if input_ is None or not self._student.supports_incremental_learning():
+                time.sleep(0.001)
+                continue
+            
+            student.train([input_])
+            self._training_data.append(input_)
+            student.probe(self._training_data)
+            time.sleep(0.001)
+            
     def try_connect_to_pn(self):
         if self._create_entity is None:
             raise Exception("receive_from_pn requires create_entity to be defined")
@@ -122,14 +140,9 @@ class Application:
         if self._previous_frame_time is None or \
            time.time() - self._previous_frame_time >= self._desired_frame_duration:
             self.update()
-        
+
     def update(self):
         now = time.time()
-        if self._input is not None and self._student.supports_incremental_learning():
-            self._student.train([self._input])
-            self._training_data.append(self._input)
-            self._student.probe(self._training_data)
-            self.on_training_data_changed()
         
         for avatar in self._avatars:
             if self._input is not None and self._student.supports_incremental_learning():
@@ -158,9 +171,6 @@ class Application:
     def training_data_size(self):
         return len(self._training_data)
 
-    def on_training_data_changed(self):
-        pass
-    
     def _send_output(self, avatar, output):
         self._output_sender.send_frame(avatar.index, output, avatar.entity)
 
@@ -235,12 +245,15 @@ class BaseUiWindow(QtGui.QWidget):
         self._add_training_data_size_label()
         self._create_menu()
 
-        application.on_training_data_changed = self._update_training_data_size_label
         application.on_pn_connection_status_changed = self._update_pn_connection_status_label
         
         timer = QtCore.QTimer(self)
-        QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), application.update_if_timely)
+        QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self._update)
         timer.start()
+
+    def _update(self):
+        self._application.update_if_timely()
+        self._update_training_data_size_label()
 
     def _add_training_data_size_label(self):
         self._control_layout.add_label("Training data size")
