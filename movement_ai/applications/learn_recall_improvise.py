@@ -9,11 +9,11 @@ MODELS_INFO = {
         },
 
     "pca": {
-        # "path": "profiles/dimensionality_reduction/valencia_pn_2017_07.model",
+        # "path": "profiles/dimensionality_reduction/valencia_pn_z_up.model",
         # "dimensionality_reduction_type": "KernelPCA",
-        # "dimensionality_reduction_args": ""
-
-        "path": "profiles/dimensionality_reduction/valencia_pn_z_up.model",
+        # "dimensionality_reduction_args": "--pca-kernel=rbf",
+        
+        "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_z_up.model",
         "dimensionality_reduction_type": "KernelPCA",
         "dimensionality_reduction_args": "--pca-kernel=rbf"
         }
