@@ -38,7 +38,7 @@ from PyQt4 import QtGui, QtCore
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/..")
-from application import Application, Avatar, BaseUiWindow
+from application import Application, Avatar, BaseUiWindow, Memory, Recall
 from entities.hierarchical import Entity
 from bvh.bvh_reader import BvhReader
 from dimensionality_reduction.behavior import Behavior
@@ -112,47 +112,6 @@ class WeightedShuffler:
             r -= weight
             if r < 0:
                 return self._options[index]
-
-class Memory:
-    def __init__(self):
-        self.frames = []
-
-    def on_input(self, input_):
-        self.frames.append(input_)
-
-    def get_num_frames(self):
-        return len(self.frames)
-
-    def create_random_recall(self, num_frames_to_recall):
-        if random.uniform(0.0, 1.0) < args.reverse_recall_probability:
-            return self._create_reverse_recall(num_frames_to_recall)
-        else:
-            return self._create_normal_recall(num_frames_to_recall)
-
-    def _create_normal_recall(self, num_frames_to_recall):
-        max_cursor = self.get_num_frames() - num_frames_to_recall
-        cursor = int(random.random() * max_cursor)
-        time_direction = 1
-        print "normal recall from %s" % cursor
-        return Recall(cursor, time_direction)
-
-    def _create_reverse_recall(self, num_frames_to_recall):
-        max_cursor = self.get_num_frames() - num_frames_to_recall
-        cursor = int(random.random() * max_cursor) + num_frames_to_recall
-        time_direction = -1
-        print "reverse recall from %s" % cursor
-        return Recall(cursor, time_direction)
-
-class Recall:
-    def __init__(self, cursor, time_direction):
-        self._cursor = cursor
-        self._time_direction = time_direction
-        
-    def proceed(self, num_frames):
-        self._cursor += num_frames * self._time_direction
-
-    def get_output(self):
-        return memory.frames[self._cursor]
 
 class SwitchingBehavior(Behavior):
     MIRROR = "mirror"
@@ -358,7 +317,8 @@ class SwitchingBehavior(Behavior):
         print "preparing %s" % state
         if state == self.RECALL:
             self._next_recall = memory.create_random_recall(
-                self._recall_num_frames_including_interpolation)
+                self._recall_num_frames_including_interpolation,
+                args.reverse_recall_probability)
 
     def _state_num_frames(self, state):
         if state == self.MIRROR:

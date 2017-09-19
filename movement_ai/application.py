@@ -178,6 +178,51 @@ class Application:
     def on_changed_friction(self, value):
         pass
         
+class Memory:
+    def __init__(self):
+        self.clear()
+
+    def clear(self):
+        self.frames = []
+
+    def on_input(self, input_):
+        self.frames.append(input_)
+
+    def get_num_frames(self):
+        return len(self.frames)
+
+    def create_random_recall(self, num_frames_to_recall, reverse_recall_probability=0):
+        if random.uniform(0.0, 1.0) < reverse_recall_probability:
+            return self._create_reverse_recall(num_frames_to_recall)
+        else:
+            return self._create_normal_recall(num_frames_to_recall)
+
+    def _create_normal_recall(self, num_frames_to_recall):
+        max_cursor = self.get_num_frames() - num_frames_to_recall
+        cursor = int(random.random() * max_cursor)
+        time_direction = 1
+        print "normal recall from %s" % cursor
+        return Recall(self, cursor, time_direction)
+
+    def _create_reverse_recall(self, num_frames_to_recall):
+        max_cursor = self.get_num_frames() - num_frames_to_recall
+        cursor = int(random.random() * max_cursor) + num_frames_to_recall
+        time_direction = -1
+        print "reverse recall from %s" % cursor
+        return Recall(self, cursor, time_direction)
+
+class Recall:
+    def __init__(self, memory, cursor, time_direction):
+        self._memory = memory
+        self._cursor = cursor
+        self._time_direction = time_direction
+        
+    def proceed(self, num_frames):
+        self._cursor += num_frames * self._time_direction
+
+    def get_output(self):
+        return self._memory.frames[self._cursor]
+
 class BaseUiWindow(QtGui.QWidget):
     def __init__(self, application, master_behavior):
         QtGui.QWidget.__init__(self)
