@@ -27,6 +27,7 @@ FLOOR = True
 MAX_NOVELTY = 4#1.4
 SLIDER_PRECISION = 1000
 MAX_LEARNING_RATE = 0.01
+MAX_RECALL_RECENCY_DURATION = 100
 
 from argparse import ArgumentParser
 import numpy
@@ -50,6 +51,7 @@ parser.add_argument("--with-ui", action="store_true")
 parser.add_argument("--recall-amount", type=float, default=0)
 parser.add_argument("--recall-duration", type=float, default=3)
 parser.add_argument("--reverse-recall-probability", type=float, default=0)
+parser.add_argument("--recall-recency-duration", type=float, default=20.)
 parser.add_argument("--learning-rate", type=float, default=0.0)
 parser.add_argument("--memorize", action="store_true")
 parser.add_argument("--auto-friction", action="store_true")
@@ -101,6 +103,7 @@ class UiWindow(BaseUiWindow):
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
+        self._add_recall_recency_duration_control()
         self._add_model_control()
         self._add_auto_friction_control()
         self._add_friction_control()
@@ -161,6 +164,22 @@ class UiWindow(BaseUiWindow):
             master_behavior.set_recall_amount(recall_amount)
 
         self._control_layout.add_label("Recall amount")
+        self._control_layout.add_control_widget(create_slider())
+
+    def _add_recall_recency_duration_control(self):
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(args.recall_recency_duration / MAX_RECALL_RECENCY_DURATION * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_value)
+            return slider
+
+        def on_changed_value(value):
+            recall_recency_duration = float(value) * MAX_RECALL_RECENCY_DURATION / SLIDER_PRECISION
+            recall_behavior.set_recall_recency_duration(recall_recency_duration)
+
+        self._control_layout.add_label("Recency duration (max %.1f)" % MAX_RECALL_RECENCY_DURATION)
         self._control_layout.add_control_widget(create_slider())
         
     def _add_max_angular_step_control(self):
@@ -306,8 +325,12 @@ class RecallBehavior(Behavior):
         self._interpolation_num_frames = int(round(self.interpolation_duration * args.frame_rate))
         self._recall_num_frames_including_interpolation = self._recall_num_frames + \
                                                           2 * self._interpolation_num_frames
+        self.set_recall_recency_duration(args.recall_recency_duration)
         self.reset()
 
+    def set_recall_recency_duration(self, duration):
+        self._recall_recency_num_frames = int(round(duration) * args.frame_rate)
+        
     def reset(self):
         self._initialize_state(self.IDLE)
         self._output = None
@@ -317,12 +340,15 @@ class RecallBehavior(Behavior):
         self._state = state
         self._state_frames = 0
         if state == self.NORMAL:
-            self._current_recall = memory.create_random_recall(
-                self._recall_num_frames_including_interpolation)
+            self._current_recall = self._create_recall()
         elif state == self.CROSSFADE:
-            self._next_recall = memory.create_random_recall(
-                self._recall_num_frames_including_interpolation)
+            self._next_recall = self._create_recall()
             self._interpolation_crossed_halfway = False
+
+    def _create_recall(self):
+        return memory.create_random_recall(
+            self._recall_num_frames_including_interpolation,
+            recency_num_frames=self._recall_recency_num_frames)
 
     def proceed(self, time_increment):
         self._remaining_frames_to_process = int(round(time_increment * args.frame_rate))

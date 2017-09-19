@@ -201,15 +201,21 @@ class Memory:
     def get_num_frames(self):
         return len(self.frames)
 
-    def create_random_recall(self, num_frames_to_recall, reverse_recall_probability=0):
+    def create_random_recall(self, num_frames_to_recall,
+                             reverse_recall_probability=0,
+                             recency_num_frames=None):
         if random.uniform(0.0, 1.0) < reverse_recall_probability:
             return self._create_reverse_recall(num_frames_to_recall)
         else:
-            return self._create_normal_recall(num_frames_to_recall)
+            return self._create_normal_recall(num_frames_to_recall, recency_num_frames)
 
-    def _create_normal_recall(self, num_frames_to_recall):
+    def _create_normal_recall(self, num_frames_to_recall, recency_num_frames=None):
         max_cursor = self.get_num_frames() - num_frames_to_recall
-        cursor = int(random.random() * max_cursor)
+        if recency_num_frames is None:
+            min_cursor = 0
+        else:
+            min_cursor = max(self.get_num_frames() - recency_num_frames, 0)
+        cursor = int(random.uniform(min_cursor, max_cursor))
         time_direction = 1
         print "normal recall from %s" % cursor
         return Recall(self, cursor, time_direction)
