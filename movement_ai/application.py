@@ -76,24 +76,6 @@ class Application:
         self._previous_frame_time = None
         self._fps_meter = FpsMeter("output")
 
-    def start_learning_thread(self):
-        thread = threading.Thread(target=self._learning_loop)
-        thread.daemon = True
-        thread.start()
-        
-    def _learning_loop(self):
-        while True:
-            input_ = self._input
-            student = self._student
-            if input_ is None or not self._student.supports_incremental_learning():
-                time.sleep(0.001)
-                continue
-            
-            student.train([input_])
-            self._training_data.append(input_)
-            student.probe(self._training_data)
-            time.sleep(0.001)
-            
     def try_connect_to_pn(self):
         if self._create_entity is None:
             raise Exception("receive_from_pn requires create_entity to be defined")
@@ -154,6 +136,10 @@ class Application:
 
     def update(self):
         now = time.time()
+        if self._input is not None and self._student.supports_incremental_learning():
+            self._student.train([self._input])
+            self._training_data.append(self._input)
+            self._student.probe(self._training_data)
         
         for avatar in self._avatars:
             if self._input is not None and self._student.supports_incremental_learning():
