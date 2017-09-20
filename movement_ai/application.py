@@ -38,8 +38,18 @@ class Application:
         self._args = args
         self.receive_from_pn = receive_from_pn
         self._create_entity = create_entity
-        self.show_fps = args.show_fps
+        self._pn_receiver = None
+        self.set_show_fps(args.show_fps)
 
+    @property
+    def show_fps(self):
+        return self._show_fps
+    
+    def set_show_fps(self, value):
+        self._show_fps = value
+        if self._pn_receiver is not None:
+            self._pn_receiver.show_fps = value
+        
     def initialize(self):
         if self._args.random_seed is not None:
             random.seed(self._args.random_seed)
@@ -64,7 +74,7 @@ class Application:
         self._desired_frame_duration = 1.0 / self._args.frame_rate
         self._frame_count = 0
         self._previous_frame_time = None
-        self._fps_meter = FpsMeter()
+        self._fps_meter = FpsMeter("output")
 
     def start_learning_thread(self):
         thread = threading.Thread(target=self._learning_loop)
@@ -90,7 +100,7 @@ class Application:
         
         def receive_from_pn(pn_entity):
             try:
-                for frame in pn_receiver.get_frames():
+                for frame in self._pn_receiver.get_frames():
                     process_frame(frame)
             except tracking.pn.receiver.RemotePeerShutDown:
                 print "Lost connection to PN!"
@@ -102,14 +112,15 @@ class Application:
             input_from_pn[0:3] += pn_translation_offset
             self.set_input(input_from_pn)
 
-        pn_receiver = tracking.pn.receiver.PnReceiver()
+        self._pn_receiver = tracking.pn.receiver.PnReceiver()
         print "connecting to PN server..."
         try:
-            pn_receiver.connect(self._args.pn_host, self._args.pn_port)
+            self._pn_receiver.connect(self._args.pn_host, self._args.pn_port)
         except Exception as exception:
             print "Failed: %s" % exception
             return
         print "ok"
+        self._pn_receiver.show_fps = self._show_fps
         self.on_pn_connection_status_changed(True)
         pn_entity = self._create_entity()
         if self._args.pn_translation_offset:
@@ -313,7 +324,7 @@ class BaseUiWindow(QtGui.QWidget):
 
     def _add_show_fps_action(self):
         def on_triggered(checked):
-            self._application.show_fps = checked
+            self._application.set_show_fps(checked)
         
         action = QtGui.QAction("Show frame rate", self)
         action.setCheckable(True)

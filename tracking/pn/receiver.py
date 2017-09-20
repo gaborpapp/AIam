@@ -10,11 +10,19 @@ SERVER_PORT_BVH = 7001
 
 import socket
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/../../movement_ai")
+from fps_meter import FpsMeter
+
 class RemotePeerShutDown(Exception):
     pass
 
-
 class PnReceiver:
+    def __init__(self):
+        self.show_fps = False
+        self._fps_meter = FpsMeter("PnReceiver")
+        
     def connect(self, host, port):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._socket.connect((host, port))
@@ -42,4 +50,6 @@ class PnReceiver:
         values_as_floats = [float(string)
                             for string in values_as_strings
                             if len(string) > 0]
+        if self.show_fps:
+            self._fps_meter.update()
         return values_as_floats

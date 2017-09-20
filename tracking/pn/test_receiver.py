@@ -38,6 +38,7 @@ parser.add_argument("-speed", type=float, default=1.0)
 parser.add_argument("-loop", action="store_true")
 parser.add_argument("--z-up", action="store_true")
 parser.add_argument("--enable-floor", action="store_true")
+parser.add_argument("--show-fps", action="store_true")
 args = parser.parse_args()
 
 class MainWindow(Window):
@@ -288,6 +289,8 @@ pn_receiver = PnReceiver()
 print "connecting..."
 pn_receiver.connect(args.host, args.port)
 print "ok"
+
+pn_receiver.show_fps = args.show_fps
 
 receiver_thread = threading.Thread(target=receive)
 receiver_thread.daemon = True
