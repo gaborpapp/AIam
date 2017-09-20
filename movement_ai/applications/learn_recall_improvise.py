@@ -32,6 +32,7 @@ MAX_RECALL_RECENCY_DURATION = 100
 from argparse import ArgumentParser
 import numpy
 import random
+import math
 from PyQt4 import QtGui, QtCore
 
 import sys
@@ -398,7 +399,8 @@ class RecallBehavior(Behavior):
         
         from_output = self._current_recall.get_output()
         to_output = self._next_recall.get_output()
-        amount = float(self._state_frames) / self._interpolation_num_frames
+        relative_cursor = float(self._state_frames) / self._interpolation_num_frames
+        amount = 1 - (math.sin((relative_cursor + .5) * math.pi) + 1) / 2
         self._output = recall_entity.interpolate(from_output, to_output, amount)
 
         self._state_frames += frames_to_process
