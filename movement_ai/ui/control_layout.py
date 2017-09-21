@@ -29,7 +29,10 @@ class ControlLayout:
             self._layout.addWidget(widgets[1], self._row, 2, row_span, column_span)
         self._row += 1
 
-    def add_slider_row(self, label, max_value, default_value, on_changed_value):
+    def add_slider_row(self, label, max_value, default_value, on_changed_value, label_precision=4):
+        value_widget = QtGui.QLabel()
+        value_widget.setFixedWidth(60)
+        
         def create_slider():
             slider = QtGui.QSlider(QtCore.Qt.Horizontal)
             slider.setRange(0, SLIDER_PRECISION)
@@ -40,7 +43,13 @@ class ControlLayout:
 
         def on_changed_slider_value(slider_value):
             value = float(slider_value) / SLIDER_PRECISION * max_value
+            update_value_widget(value)
             on_changed_value(value)
 
+        def update_value_widget(value):
+            format_string = "%%.%df" % label_precision
+            value_widget.setText(format_string % value)
+            
         self.add_label(label)
-        self.add_control_widget(create_slider())
+        self.add_control_widgets([create_slider(), value_widget])
+        update_value_widget(default_value)

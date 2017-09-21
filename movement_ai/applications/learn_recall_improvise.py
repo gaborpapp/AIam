@@ -149,7 +149,8 @@ class UiWindow(BaseUiWindow):
         self._control_layout.add_slider_row(
             "Recency duration (max %.1f)" % MAX_RECALL_RECENCY_DURATION,
             MAX_RECALL_RECENCY_DURATION, args.recall_recency_duration,
-            recall_behavior.set_recall_recency_duration)
+            recall_behavior.set_recall_recency_duration,
+            label_precision=1)
         
     def _add_max_angular_step_control(self):
         self._control_layout.add_slider_row(
@@ -203,6 +204,9 @@ class UiWindow(BaseUiWindow):
         checkbox = QtGui.QCheckBox()
         checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
         self._control_layout.add_control_widget(checkbox)
+
+    def sizeHint(self):
+        return QtCore.QSize(500, 0)        
 
 class MasterBehavior(Behavior):
     def __init__(self):
