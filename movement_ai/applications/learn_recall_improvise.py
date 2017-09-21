@@ -56,6 +56,7 @@ parser.add_argument("--recall-recency", type=float, default=10.)
 parser.add_argument("--learning-rate", type=float, default=0.0)
 parser.add_argument("--memorize", action="store_true")
 parser.add_argument("--auto-friction", action="store_true")
+parser.add_argument("--verbose", action="store_true")
 Application.add_parser_arguments(parser)
 ImproviseParameters().add_parser_arguments(parser)
 args = parser.parse_args()
@@ -249,16 +250,28 @@ class MasterBehavior(Behavior):
         
         improvise_output = self._get_improvise_output()
         recall_output = recall_behavior.get_output()
+        
+        if args.verbose:
+            self._print_output_info("improvise_output", improvise_output)
+            self._print_output_info("recall_output", recall_output)
+            
         if recall_output is None:
             if self._recall_amount > 0:
                 print "WARNING: recall amount > 0 but no recall output"
             return improvise_output
+        
         translation = self._get_translation(improvise_output)
         orientations = self._get_orientations(
             master_entity.interpolate(improvise_output, recall_output, self._recall_amount))
         output = self._combine_translation_and_orientation(translation, orientations)
         return output
 
+    def _print_output_info(self, name, output):
+        if output is None:
+            return
+        root_quaternion = output[0:4]
+        print "%s root: %s" % (name, root_quaternion)
+    
     def _get_improvise_output(self):
         reduction = self._improvise.get_reduction()
         if reduction is None:
