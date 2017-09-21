@@ -27,7 +27,7 @@ FLOOR = True
 MAX_NOVELTY = 4#1.4
 SLIDER_PRECISION = 1000
 MAX_LEARNING_RATE = 0.01
-MAX_RECALL_RECENCY = 20 * 60
+MAX_RECALL_RECENCY_SIZE = 60
 
 from argparse import ArgumentParser
 import numpy
@@ -52,7 +52,8 @@ parser.add_argument("--with-ui", action="store_true")
 parser.add_argument("--recall-amount", type=float, default=0)
 parser.add_argument("--recall-duration", type=float, default=3)
 parser.add_argument("--reverse-recall-probability", type=float, default=0)
-parser.add_argument("--recall-recency", type=float, default=10.)
+parser.add_argument("--recall-recency-size", type=float, default=10.)
+parser.add_argument("--recall-recency-bias", type=float, default=1.)
 parser.add_argument("--learning-rate", type=float, default=0.0)
 parser.add_argument("--memorize", action="store_true")
 parser.add_argument("--auto-friction", action="store_true")
@@ -105,7 +106,8 @@ class UiWindow(BaseUiWindow):
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
-        self._add_recall_recency_control()
+        self._add_recall_recency_size_control()
+        self._add_recall_recency_bias_control()
         self._add_model_control()
         self._add_auto_friction_control()
         self._add_friction_control()
@@ -146,10 +148,16 @@ class UiWindow(BaseUiWindow):
             "Recall amount", 1., args.recall_amount,
             master_behavior.set_recall_amount)
 
-    def _add_recall_recency_control(self):
+    def _add_recall_recency_size_control(self):
         self._control_layout.add_slider_row(
-            "Recall recency (s)", MAX_RECALL_RECENCY, args.recall_recency,
-            recall_behavior.set_recall_recency,
+            "Recency size (s)", MAX_RECALL_RECENCY_SIZE, args.recall_recency_size,
+            recall_behavior.set_recall_recency_size,
+            label_precision=1)
+
+    def _add_recall_recency_bias_control(self):
+        self._control_layout.add_slider_row(
+            "Recency bias", 1., args.recall_recency_bias,
+            recall_behavior.set_recall_recency_bias,
             label_precision=1)
         
     def _add_max_angular_step_control(self):
@@ -298,11 +306,15 @@ class RecallBehavior(Behavior):
         self._interpolation_num_frames = int(round(self.interpolation_duration * args.frame_rate))
         self._recall_num_frames_including_interpolation = self._recall_num_frames + \
                                                           2 * self._interpolation_num_frames
-        self.set_recall_recency(args.recall_recency)
+        self.set_recall_recency_size(args.recall_recency_size)
+        self.set_recall_recency_bias(args.recall_recency_bias)
         self.reset()
 
-    def set_recall_recency(self, duration):
+    def set_recall_recency_size(self, duration):
         self._recall_recency_num_frames = int(round(duration) * args.frame_rate)
+
+    def set_recall_recency_bias(self, value):
+        self._recall_recency_bias = value
         
     def reset(self):
         self._initialize_state(self.IDLE)
@@ -319,9 +331,16 @@ class RecallBehavior(Behavior):
             self._interpolation_crossed_halfway = False
 
     def _create_recall(self):
+        if random.random() < self._recall_recency_bias:
+            recency_num_frames = self._recall_recency_num_frames
+            print "RECALL WITH RECENCY"
+        else:
+            print "RECALL FROM ENTIRE MEMORY"
+            recency_num_frames = None
+            
         return memory.create_random_recall(
             self._recall_num_frames_including_interpolation,
-            recency_num_frames=self._recall_recency_num_frames)
+            recency_num_frames=recency_num_frames)
 
     def proceed(self, time_increment):
         self._remaining_frames_to_process = int(round(time_increment * args.frame_rate))
