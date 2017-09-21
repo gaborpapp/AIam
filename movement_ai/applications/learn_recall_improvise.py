@@ -27,7 +27,7 @@ FLOOR = True
 MAX_NOVELTY = 4#1.4
 SLIDER_PRECISION = 1000
 MAX_LEARNING_RATE = 0.01
-MAX_RECALL_RECENCY_DURATION = 100
+MAX_RECALL_RECENCY_DURATION = 20 * 60
 
 from argparse import ArgumentParser
 import numpy
@@ -52,7 +52,7 @@ parser.add_argument("--with-ui", action="store_true")
 parser.add_argument("--recall-amount", type=float, default=0)
 parser.add_argument("--recall-duration", type=float, default=3)
 parser.add_argument("--reverse-recall-probability", type=float, default=0)
-parser.add_argument("--recall-recency-duration", type=float, default=20.)
+parser.add_argument("--recall-recency-duration", type=float, default=10.)
 parser.add_argument("--learning-rate", type=float, default=0.0)
 parser.add_argument("--memorize", action="store_true")
 parser.add_argument("--auto-friction", action="store_true")
@@ -147,8 +147,7 @@ class UiWindow(BaseUiWindow):
 
     def _add_recall_recency_duration_control(self):
         self._control_layout.add_slider_row(
-            "Recency duration (max %.1f)" % MAX_RECALL_RECENCY_DURATION,
-            MAX_RECALL_RECENCY_DURATION, args.recall_recency_duration,
+            "Recency duration", MAX_RECALL_RECENCY_DURATION, args.recall_recency_duration,
             recall_behavior.set_recall_recency_duration,
             label_precision=1)
         
