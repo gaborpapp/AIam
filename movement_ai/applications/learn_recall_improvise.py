@@ -126,20 +126,9 @@ class UiWindow(BaseUiWindow):
         self._memory_menu.addAction(action)
         
     def _add_learning_rate_control(self):
-        def create_slider():
-            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-            slider.setRange(0, SLIDER_PRECISION)
-            slider.setSingleStep(1)
-            slider.setValue(args.learning_rate / MAX_LEARNING_RATE * SLIDER_PRECISION)
-            slider.valueChanged.connect(on_changed_value)
-            return slider
-    
-        def on_changed_value(value):
-            learning_rate = float(value) / SLIDER_PRECISION * MAX_LEARNING_RATE
-            students["autoencoder"].set_learning_rate(learning_rate)
-
-        self._control_layout.add_label("Learning rate")
-        self._control_layout.add_control_widget(create_slider())
+        self._control_layout.add_slider_row(
+            "Learning rate", MAX_LEARNING_RATE, args.learning_rate,
+            students["autoencoder"].set_learning_rate)
         
     def _add_memorize_control(self):
         def on_changed_state(checkbox):
@@ -152,52 +141,19 @@ class UiWindow(BaseUiWindow):
         self._control_layout.add_control_widget(checkbox)
 
     def _add_recall_amount_control(self):
-        def create_slider():
-            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-            slider.setRange(0, SLIDER_PRECISION)
-            slider.setSingleStep(1)
-            slider.setValue(args.recall_amount * SLIDER_PRECISION)
-            slider.valueChanged.connect(on_changed_value)
-            return slider
-
-        def on_changed_value(value):
-            recall_amount = float(value) / SLIDER_PRECISION
-            master_behavior.set_recall_amount(recall_amount)
-
-        self._control_layout.add_label("Recall amount")
-        self._control_layout.add_control_widget(create_slider())
+        self._control_layout.add_slider_row(
+            "Recall amount", 1., args.recall_amount,
+            master_behavior.set_recall_amount)
 
     def _add_recall_recency_duration_control(self):
-        def create_slider():
-            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-            slider.setRange(0, SLIDER_PRECISION)
-            slider.setSingleStep(1)
-            slider.setValue(args.recall_recency_duration / MAX_RECALL_RECENCY_DURATION * SLIDER_PRECISION)
-            slider.valueChanged.connect(on_changed_value)
-            return slider
-
-        def on_changed_value(value):
-            recall_recency_duration = float(value) * MAX_RECALL_RECENCY_DURATION / SLIDER_PRECISION
-            recall_behavior.set_recall_recency_duration(recall_recency_duration)
-
-        self._control_layout.add_label("Recency duration (max %.1f)" % MAX_RECALL_RECENCY_DURATION)
-        self._control_layout.add_control_widget(create_slider())
+        self._control_layout.add_slider_row(
+            "Recency duration (max %.1f)" % MAX_RECALL_RECENCY_DURATION,
+            MAX_RECALL_RECENCY_DURATION, args.recall_recency_duration,
+            recall_behavior.set_recall_recency_duration)
         
     def _add_max_angular_step_control(self):
-        def create_slider():
-            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-            slider.setRange(0, SLIDER_PRECISION)
-            slider.setSingleStep(1)
-            slider.setValue(args.max_angular_step * SLIDER_PRECISION)
-            slider.valueChanged.connect(on_changed_value)
-            return slider
-
-        def on_changed_value(value):
-            max_angular_step = float(value) / SLIDER_PRECISION
-            set_max_angular_step(max_angular_step)
-
-        self._control_layout.add_label("Max angular step")
-        self._control_layout.add_control_widget(create_slider())
+        self._control_layout.add_slider_row(
+            "Max angular step", 1., args.max_angular_step, set_max_angular_step)
         
     def _add_model_control(self):
         def create_combobox():

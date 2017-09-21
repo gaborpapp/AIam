@@ -1,4 +1,6 @@
-from PyQt4 import QtGui
+from PyQt4 import QtGui, QtCore
+
+SLIDER_PRECISION = 1000
 
 class ControlLayout:
     def __init__(self):
@@ -26,3 +28,19 @@ class ControlLayout:
             self._layout.addWidget(widgets[0], self._row, 1, row_span, column_span)
             self._layout.addWidget(widgets[1], self._row, 2, row_span, column_span)
         self._row += 1
+
+    def add_slider_row(self, label, max_value, default_value, on_changed_value):
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.setValue(default_value / max_value * SLIDER_PRECISION)
+            slider.valueChanged.connect(on_changed_slider_value)
+            return slider
+
+        def on_changed_slider_value(slider_value):
+            value = float(slider_value) / SLIDER_PRECISION * max_value
+            on_changed_value(value)
+
+        self.add_label(label)
+        self.add_control_widget(create_slider())
