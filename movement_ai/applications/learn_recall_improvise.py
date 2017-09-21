@@ -27,7 +27,7 @@ FLOOR = True
 MAX_NOVELTY = 4#1.4
 SLIDER_PRECISION = 1000
 MAX_LEARNING_RATE = 0.01
-MAX_RECALL_RECENCY_DURATION = 20 * 60
+MAX_RECALL_RECENCY = 20 * 60
 
 from argparse import ArgumentParser
 import numpy
@@ -52,7 +52,7 @@ parser.add_argument("--with-ui", action="store_true")
 parser.add_argument("--recall-amount", type=float, default=0)
 parser.add_argument("--recall-duration", type=float, default=3)
 parser.add_argument("--reverse-recall-probability", type=float, default=0)
-parser.add_argument("--recall-recency-duration", type=float, default=10.)
+parser.add_argument("--recall-recency", type=float, default=10.)
 parser.add_argument("--learning-rate", type=float, default=0.0)
 parser.add_argument("--memorize", action="store_true")
 parser.add_argument("--auto-friction", action="store_true")
@@ -104,7 +104,7 @@ class UiWindow(BaseUiWindow):
         self._add_learning_rate_control()
         self._add_memorize_control()
         self._add_recall_amount_control()
-        self._add_recall_recency_duration_control()
+        self._add_recall_recency_control()
         self._add_model_control()
         self._add_auto_friction_control()
         self._add_friction_control()
@@ -145,10 +145,10 @@ class UiWindow(BaseUiWindow):
             "Recall amount", 1., args.recall_amount,
             master_behavior.set_recall_amount)
 
-    def _add_recall_recency_duration_control(self):
+    def _add_recall_recency_control(self):
         self._control_layout.add_slider_row(
-            "Recency duration", MAX_RECALL_RECENCY_DURATION, args.recall_recency_duration,
-            recall_behavior.set_recall_recency_duration,
+            "Recall recency (s)", MAX_RECALL_RECENCY, args.recall_recency,
+            recall_behavior.set_recall_recency,
             label_precision=1)
         
     def _add_max_angular_step_control(self):
@@ -285,10 +285,10 @@ class RecallBehavior(Behavior):
         self._interpolation_num_frames = int(round(self.interpolation_duration * args.frame_rate))
         self._recall_num_frames_including_interpolation = self._recall_num_frames + \
                                                           2 * self._interpolation_num_frames
-        self.set_recall_recency_duration(args.recall_recency_duration)
+        self.set_recall_recency(args.recall_recency)
         self.reset()
 
-    def set_recall_recency_duration(self, duration):
+    def set_recall_recency(self, duration):
         self._recall_recency_num_frames = int(round(duration) * args.frame_rate)
         
     def reset(self):
