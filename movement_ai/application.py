@@ -190,14 +190,25 @@ class Memory:
         self.clear()
 
     def clear(self):
-        self.frames = []
+        self.set_frames([])
 
-    def on_input(self, input_):
-        self.frames.append(input_)
+    def set_frames(self, frames):
+        self._frames = frames
+        self.on_frames_changed()
+        
+    def on_input(self, frame):
+        self._frames.append(frame)
+        self.on_frames_changed()
 
     def get_num_frames(self):
-        return len(self.frames)
+        return len(self._frames)
 
+    def get_frames(self):
+        return self._frames
+    
+    def get_frame_by_index(self, index):
+        return self._frames[index]
+    
     def create_random_recall(self, num_frames_to_recall,
                              reverse_recall_probability=0,
                              recency_num_frames=None):
@@ -224,6 +235,9 @@ class Memory:
         print "reverse recall from %s" % cursor
         return Recall(self, cursor, time_direction)
 
+    def on_frames_changed(self):
+        pass
+    
 class Recall:
     def __init__(self, memory, cursor, time_direction):
         self._memory = memory
@@ -234,7 +248,7 @@ class Recall:
         self._cursor += num_frames * self._time_direction
 
     def get_output(self):
-        return self._memory.frames[self._cursor]
+        return self._memory.get_frame_by_index(self._cursor)
 
 class BaseUiWindow(QtGui.QWidget):
     def __init__(self, application, master_behavior):

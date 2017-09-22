@@ -45,6 +45,7 @@ from dimensionality_reduction.behavior import Behavior
 from dimensionality_reduction.behaviors.improvise import ImproviseParameters, Improvise
 from dimensionality_reduction.factory import DimensionalityReductionFactory
 from ui.parameters_form import ParametersForm
+import storage
 
 parser = ArgumentParser()
 parser.add_argument("--model", choices=MODELS, default="pca")
@@ -58,6 +59,7 @@ parser.add_argument("--learning-rate", type=float, default=0.0)
 parser.add_argument("--memorize", action="store_true")
 parser.add_argument("--auto-friction", action="store_true")
 parser.add_argument("--verbose", action="store_true")
+parser.add_argument("--memory")
 Application.add_parser_arguments(parser)
 ImproviseParameters().add_parser_arguments(parser)
 args = parser.parse_args()
@@ -104,6 +106,7 @@ class UiWindow(BaseUiWindow):
         super(UiWindow, self).__init__(application, master_behavior)
         self._create_memory_menu()
         self._add_learning_rate_control()
+        self._add_memory_size_label()
         self._add_memorize_control()
         self._add_recall_amount_control()
         self._add_recall_recency_size_control()
@@ -114,10 +117,14 @@ class UiWindow(BaseUiWindow):
         self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
         self._add_input_only_control()
+        memory.on_frames_changed = self._update_memory_size_label
+        memory.on_frames_changed()
 
     def _create_memory_menu(self):
         self._memory_menu = self._menu_bar.addMenu("Memory")
         self._add_clear_memory_action()
+        self._add_load_memory_action()
+        self._add_save_memory_action()
 
     def _add_clear_memory_action(self):
         def clear_memory():
@@ -127,6 +134,35 @@ class UiWindow(BaseUiWindow):
         action = QtGui.QAction("Clear memory", self)
         action.triggered.connect(clear_memory)
         self._memory_menu.addAction(action)
+
+    def _add_save_memory_action(self):
+        def save_memory():
+            filename = QtGui.QFileDialog.getSaveFileName(self, "Save memory", filter="Memory (*.mem)")
+            if filename:
+                storage.save(memory.get_frames(), filename)
+                
+        action = QtGui.QAction("Save memory", self)
+        action.triggered.connect(save_memory)
+        self._memory_menu.addAction(action)
+
+    def _add_load_memory_action(self):
+        def load_memory():
+            filename = QtGui.QFileDialog.getLoadFileName(self, "Load memory", filter="Memory (*.mem)")
+            if filename:
+                memory.set_frames(storage.load(filename))
+                recall_behavior.reset()
+                
+        action = QtGui.QAction("Load memory", self)
+        action.triggered.connect(load_memory)
+        self._memory_menu.addAction(action)
+
+    def _add_memory_size_label(self):
+        self._control_layout.add_label("Memory size")
+        self._memory_size_label = QtGui.QLabel("")
+        self._control_layout.add_control_widget(self._memory_size_label)
+
+    def _update_memory_size_label(self):
+        self._memory_size_label.setText("%d" % memory.get_num_frames())
         
     def _add_learning_rate_control(self):
         self._control_layout.add_slider_row(
@@ -417,6 +453,8 @@ improvise_behaviors = {
 
 index = 0
 memory = Memory()
+if args.memory:
+    memory.set_frames(storage.load(args.memory))
 recall_behavior = RecallBehavior()
 master_behavior = MasterBehavior() 
 avatar = Avatar(index, master_entity, master_behavior)
