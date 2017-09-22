@@ -2,37 +2,55 @@ from receiver import SERVER_PORT_BVH
 import argparse
 import SocketServer
 import time
-import glob
+import re
 
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/../../movement_ai")
-from bvh.bvh_collection import BvhCollection
 
 parser = argparse.ArgumentParser()
 parser.add_argument("bvh")
 parser.add_argument("--port", type=int, default=SERVER_PORT_BVH)
+parser.add_argument("--frame-rate", type=float, default=125)
 parser.add_argument("--speed", type=float, default=1.0)
 parser.add_argument("--ping-pong", action="store_true")
 args = parser.parse_args()
 
-bvh_filenames = glob.glob(args.bvh)
-if len(bvh_filenames) == 0:
-    raise Exception("no files found matching the pattern %s" % args.bvh)
-print "loading BVHs from %s..." % args.bvh
-bvh_reader = BvhCollection(bvh_filenames)
-bvh_reader.read()
+def get_frames_from_bvh_file(filename):
+    global frames, bvh_frame_time
+    
+    frames = []
+    with open(filename) as f:
+        for line in f:
+            line = line.rstrip("\n")
+            
+            m = re.match("^Frame Time: ([0-9\.]+)$", line)
+            if m:
+                bvh_frame_time = float(m.group(1))
+                break
+
+        for line in f:
+            line = line.rstrip("\n")
+            frame = "mock_ID mock_name %s||\n" % line
+            frames.append(frame)
     
 class PnSimulatorHandler(SocketServer.BaseRequestHandler):
     def handle(self):
+        sending_start_time = time.time()
+        num_frames_sent = 0
         while True:
-            t = int((time.time() - start_time) / frame_time)
+            if num_frames_sent > 0:
+                sending_fps = float(num_frames_sent) / (time.time() - sending_start_time)
+                if sending_fps > args.frame_rate:
+                    time.sleep(0.00001)
+                    continue
+                
+            t = int((time.time() - start_time) / bvh_frame_time)
             frame_index = looper.get_frame_index(t)
-            frame = bvh_reader.get_frame_by_index(frame_index)
-            line = "mock_ID mock_name " + " ".join([str(value) for value in frame])
-            self.request.sendall("%s||\n" % line)
-            time.sleep(frame_time)
-
+            frame = frames[frame_index]
+            self.request.sendall(frame)
+            num_frames_sent += 1
+            
 class NormalLooper:
     def __init__(self, num_frames):
         self._num_frames = num_frames
@@ -53,13 +71,17 @@ class PingPongLooper:
         else:
             result = self._loop_length - t_within_loop
         return result
-        
-if args.ping_pong:
-    looper = PingPongLooper(bvh_reader.get_num_frames())
-else:
-    looper = NormalLooper(bvh_reader.get_num_frames())
 
-frame_time = bvh_reader.get_frame_time() / args.speed
+get_frames_from_bvh_file(args.bvh)
+num_frames = len(frames)
+
+if args.ping_pong:
+    looper = PingPongLooper(num_frames)
+else:
+    looper = NormalLooper(num_frames)
+
+bvh_frame_time = bvh_frame_time / args.speed
+sending_frame_time = 1. / args.frame_rate
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
