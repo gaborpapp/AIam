@@ -46,6 +46,7 @@ from dimensionality_reduction.behaviors.improvise import ImproviseParameters, Im
 from dimensionality_reduction.factory import DimensionalityReductionFactory
 from ui.parameters_form import ParametersForm
 import storage
+from chaining import Chainer
 
 parser = ArgumentParser()
 parser.add_argument("--model", choices=MODELS, default="pca")
@@ -260,12 +261,14 @@ class MasterBehavior(Behavior):
         self.auto_friction = args.auto_friction
         self.input_only = False
         self._input = None
+        self._chainer = Chainer()
 
     def set_recall_amount(self, recall_amount):
         self._recall_amount = recall_amount
         
     def set_model(self, model_name):
         self._improvise = improvise_behaviors[model_name]
+        self._chainer.switch_source()
 
     def proceed(self, time_increment):
         self._improvise.proceed(time_increment)
@@ -305,6 +308,8 @@ class MasterBehavior(Behavior):
             return improvise_output
         
         translation = self._get_translation(improvise_output)
+        self._chainer.put(translation)
+        translation = self._chainer.get()
         orientations = self._get_orientations(
             master_entity.interpolate(improvise_output, recall_output, self._recall_amount))
         output = self._combine_translation_and_orientation(translation, orientations)
