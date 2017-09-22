@@ -47,6 +47,7 @@ from dimensionality_reduction.factory import DimensionalityReductionFactory
 from ui.parameters_form import ParametersForm
 import storage
 from chaining import Chainer
+from stopwatch import Stopwatch
 
 parser = ArgumentParser()
 parser.add_argument("--model", choices=MODELS, default="pca")
@@ -110,6 +111,7 @@ class UiWindow(BaseUiWindow):
         self._add_memory_size_label()
         self._add_memorize_control()
         self._add_recall_amount_control()
+        self._add_auto_switch_control()
         self._add_recall_recency_size_control()
         self._add_recall_recency_bias_control()
         self._add_model_control()
@@ -118,6 +120,7 @@ class UiWindow(BaseUiWindow):
         self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
         self._add_input_only_control()
+        master_behavior.on_recall_amount_changed = self._update_recall_amount_slider
         memory.on_frames_changed = self._update_memory_size_label
         memory.on_frames_changed()
 
@@ -181,9 +184,23 @@ class UiWindow(BaseUiWindow):
         self._control_layout.add_control_widget(checkbox)
 
     def _add_recall_amount_control(self):
-        self._control_layout.add_slider_row(
+        self._recall_amount_slider = self._control_layout.add_slider_row(
             "Recall amount", 1., args.recall_amount,
             master_behavior.set_recall_amount)
+        
+    def _update_recall_amount_slider(self):
+        # TODO: move logic to control_layout - this version doesn't take max value into account
+        self._recall_amount_slider.setValue(master_behavior.get_recall_amount() * SLIDER_PRECISION)
+        
+    def _add_auto_switch_control(self):
+        def on_changed_state(checkbox):
+            master_behavior.set_auto_switch_enabled(checkbox.isChecked())
+            self._recall_amount_slider.setEnabled(not checkbox.isChecked())
+
+        self._control_layout.add_label("Auto switch")
+        checkbox = QtGui.QCheckBox()
+        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
+        self._control_layout.add_control_widget(checkbox)        
 
     def _add_recall_recency_size_control(self):
         self._control_layout.add_slider_row(
@@ -259,13 +276,22 @@ class MasterBehavior(Behavior):
         self._recall_amount = args.recall_amount
         self.memorize = args.memorize
         self.auto_friction = args.auto_friction
+        self._auto_switch_enabled = False
         self.input_only = False
         self._input = None
         self._chainer = Chainer()
+        self._stopwatch = Stopwatch()
+        self._stopwatch.start()
 
+    def on_recall_amount_changed(self):
+        pass
+    
     def set_recall_amount(self, recall_amount):
         self._recall_amount = recall_amount
-        
+
+    def get_recall_amount(self):
+        return self._recall_amount
+    
     def set_model(self, model_name):
         self._improvise = improvise_behaviors[model_name]
         self._chainer.switch_source()
@@ -290,11 +316,18 @@ class MasterBehavior(Behavior):
         self._input = input_
         if self.memorize:
             memory.on_input(input_)
-    
+
+    def set_auto_switch_enabled(self, value):
+        self._auto_switch_enabled = value
+        
     def get_output(self):
         if self.input_only:
             return self._input
-        
+
+        if self._auto_switch_enabled:
+            self._recall_amount = self._get_auto_switch_recall_amount()
+            self.on_recall_amount_changed()
+            
         improvise_output = self._get_improvise_output()
         recall_output = recall_behavior.get_output()
         
@@ -315,6 +348,9 @@ class MasterBehavior(Behavior):
         output = self._combine_translation_and_orientation(translation, orientations)
         return output
 
+    def _get_auto_switch_recall_amount(self):
+        return (math.sin(self._stopwatch.get_elapsed_time() * .5) + 1) / 2
+    
     def _print_output_info(self, name, output):
         if output is None:
             return

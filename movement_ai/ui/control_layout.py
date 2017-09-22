@@ -49,7 +49,10 @@ class ControlLayout:
         def update_value_widget(value):
             format_string = "%%.%df" % label_precision
             value_widget.setText(format_string % value)
-            
+
+        slider = create_slider()
         self.add_label(label)
-        self.add_control_widgets([create_slider(), value_widget])
+        self.add_control_widgets([slider, value_widget])
         update_value_widget(default_value)
+        return slider
+    
