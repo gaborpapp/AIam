@@ -29,7 +29,8 @@ class Application:
         parser.add_argument("--output-receiver-port", type=int, default=10000)
         parser.add_argument("--output-receiver-type", choices=["bvh", "world"], default="bvh")
         parser.add_argument("--random-seed", type=int)
-        parser.add_argument("--memory-size", type=int, default=500)
+        parser.add_argument("--memory-size", type=int, default=100)
+        parser.add_argument("--training-data-interval", type=int, default=5)
         Entity.add_parser_arguments(parser)
         
     def __init__(self, student, avatars, args, receive_from_pn=False, create_entity=None):
@@ -138,8 +139,9 @@ class Application:
         now = time.time()
         if self._input is not None and self._student.supports_incremental_learning():
             self._student.train([self._input])
-            self._training_data.append(self._input)
-            self._student.probe(self._training_data)
+            if self._frame_count % self._args.training_data_interval == 0:
+                self._training_data.append(self._input)
+                self._student.probe(self._training_data)
         
         for avatar in self._avatars:
             if self._input is not None and self._student.supports_incremental_learning():
