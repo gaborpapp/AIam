@@ -295,6 +295,7 @@ class MasterBehavior(Behavior):
         self._chainer.put(numpy.zeros(3))
         self._chainer.get()
         self._chainer.switch_source()
+        self._selector = Selector(self._chainer.switch_source)
 
     def on_recall_amount_changed(self):
         pass
@@ -351,16 +352,26 @@ class MasterBehavior(Behavior):
         if recall_output is None:
             if self._recall_amount > 0:
                 print "WARNING: recall amount > 0 but no recall output"
-            return improvise_output
-        
-        translation = self._get_translation(improvise_output)
+            translation = self._pass_through_selector_to_update_its_state(
+                get_translation(improvise_output))
+            orientations = get_orientations(improvise_output)
+        else:
+            translation = self._selector.select(
+                get_translation(improvise_output),
+                get_translation(recall_output),
+                self._recall_amount)
+            orientations = get_orientations(
+                master_entity.interpolate(improvise_output, recall_output, self._recall_amount))
+                
         self._chainer.put(translation)
         translation = self._chainer.get()
-        orientations = self._get_orientations(
-            master_entity.interpolate(improvise_output, recall_output, self._recall_amount))
-        output = self._combine_translation_and_orientation(translation, orientations)
+        output = combine_translation_and_orientations(translation, orientations)
+        
         return output
 
+    def _pass_through_selector_to_update_its_state(self, value):
+        return self._selector.select(value, None, 0)
+    
     def _get_auto_switch_recall_amount(self):
         return (math.sin(self._stopwatch.get_elapsed_time() * .5) + 1) / 2
     
@@ -376,14 +387,14 @@ class MasterBehavior(Behavior):
             return None
         return student.inverse_transform(numpy.array([reduction]))[0]
 
-    def _get_translation(self, parameters):
-        return parameters[0:3]
+def get_translation(parameters):
+    return parameters[0:3]
 
-    def _get_orientations(self, parameters):
-        return parameters[3:]
+def get_orientations(parameters):
+    return parameters[3:]
 
-    def _combine_translation_and_orientation(self, translation, orientations):
-        return numpy.array(list(translation) + list(orientations))
+def combine_translation_and_orientations(translation, orientations):
+    return numpy.array(list(translation) + list(orientations))
 
 class RecallBehavior(Behavior):
     interpolation_duration = 1.0
@@ -409,14 +420,18 @@ class RecallBehavior(Behavior):
     def reset(self):
         self._initialize_state(self.IDLE)
         self._output = None
+        self._chainer = Chainer()
 
     def _initialize_state(self, state):
         print state
         self._state = state
         self._state_frames = 0
-        if state == self.NORMAL:
-            self._current_recall = self._create_recall()
+        if state == self.IDLE:
+            self._next_recall = self._create_recall()
+        elif state == self.NORMAL:
+            self._current_recall = self._next_recall
         elif state == self.CROSSFADE:
+            self._selector = Selector(self._chainer.switch_source)
             self._next_recall = self._create_recall()
             self._interpolation_crossed_halfway = False
 
@@ -459,8 +474,15 @@ class RecallBehavior(Behavior):
         
         frames_to_process = min(self._remaining_frames_to_process, remaining_frames_in_state)
         self._current_recall.proceed(frames_to_process)
-        self._output = self._pass_through_interpolation_to_update_its_state(
+
+        output = self._pass_through_interpolation_to_update_its_state(
             self._current_recall.get_output())
+        
+        translation = get_translation(output)
+        orientations = get_orientations(output)
+        self._chainer.put(translation)
+        translation = self._chainer.get()
+        self._output = combine_translation_and_orientations(translation, orientations)
         
         self._state_frames += frames_to_process
         self._remaining_frames_to_process -= frames_to_process
@@ -482,13 +504,35 @@ class RecallBehavior(Behavior):
         to_output = self._next_recall.get_output()
         relative_cursor = float(self._state_frames) / self._interpolation_num_frames
         amount = 1 - (math.sin((relative_cursor + .5) * math.pi) + 1) / 2
-        self._output = recall_entity.interpolate(from_output, to_output, amount)
+
+        translation = self._selector.select(
+            get_translation(from_output),
+            get_translation(to_output),
+            amount)
+        self._chainer.put(translation)
+        translation = self._chainer.get()
+        orientations = get_orientations(recall_entity.interpolate(from_output, to_output, amount))
+        self._output = combine_translation_and_orientations(translation, orientations)
 
         self._state_frames += frames_to_process
         self._remaining_frames_to_process -= frames_to_process
 
     def get_output(self):
         return self._output
+
+class Selector:
+    def __init__(self, on_switch):
+        self._previous_amount = None
+        self._on_switch = on_switch
+        
+    def select(self, from_value, to_value, amount):
+        if self._previous_amount is not None and int(round(amount)) != int(round(self._previous_amount)):
+            self._on_switch()
+        self._previous_amount = amount
+        if int(round(amount)) == 0:
+            return from_value
+        else:
+            return to_value
         
 def _create_improvise_behavior(model_name):
     preferred_location = None
