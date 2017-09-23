@@ -106,6 +106,7 @@ def set_max_angular_step(max_angular_step):
 class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
         super(UiWindow, self).__init__(application, master_behavior)
+        self._add_reset_translation_action()
         self._create_memory_menu()
         self._add_learning_rate_control()
         self._add_memory_size_label()
@@ -124,6 +125,11 @@ class UiWindow(BaseUiWindow):
         memory.on_frames_changed = self._update_memory_size_label
         memory.on_frames_changed()
 
+    def _add_reset_translation_action(self):
+        action = QtGui.QAction("Reset translation", self)
+        action.triggered.connect(master_behavior.reset_translation)
+        self._main_menu.addAction(action)
+        
     def _create_memory_menu(self):
         self._memory_menu = self._menu_bar.addMenu("Memory")
         self._add_clear_memory_action()
@@ -279,9 +285,16 @@ class MasterBehavior(Behavior):
         self._auto_switch_enabled = False
         self.input_only = False
         self._input = None
-        self._chainer = Chainer()
+        self.reset_translation()
         self._stopwatch = Stopwatch()
         self._stopwatch.start()
+
+    def reset_translation(self):
+        master_entity.reset_constrainers()
+        self._chainer = Chainer()
+        self._chainer.put(numpy.zeros(3))
+        self._chainer.get()
+        self._chainer.switch_source()
 
     def on_recall_amount_changed(self):
         pass

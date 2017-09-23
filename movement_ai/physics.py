@@ -5,9 +5,12 @@ import math
 class FrictionConstrainer:
     def __init__(self, balance_detector):
         self._balance_detector = balance_detector
+        self.enabled = True
+        self.reset()
+
+    def reset(self):
         self._translation = None
         self._supporting_vertex_index = None
-        self.enabled = True
 
     def constrain(self, vertices):
         self._update_translation(vertices)
@@ -107,3 +110,7 @@ class Constrainers:
 
     def set_friction(self, enable_friction):
         self._friction.enabled = enable_friction
+
+    def reset(self):
+        self._friction.reset()
+        

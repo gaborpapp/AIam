@@ -216,6 +216,10 @@ class Entity(BaseEntity):
             random_slide=self.args.random_slide,
             enable_circle_slide=self.args.circle_slide)
 
+    def reset_constrainers(self):
+        self._normalized_constrainers.reset()
+        self._unnormalized_constrainers.reset()
+
     def _create_parameter_info_table(self):
         self._parameter_info = []
         root_joint_definition = self.bvh_reader.get_hierarchy().get_root_joint_definition()
