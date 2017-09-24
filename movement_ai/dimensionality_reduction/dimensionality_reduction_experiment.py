@@ -55,6 +55,8 @@ class DimensionalityReductionExperiment(Experiment):
         parser.add_argument("--enable-io-blending", action="store_true")
         parser.add_argument("--io-blending-amount", type=float, default=0)
         parser.add_argument("--target-training-loss", type=float, default=0)
+        parser.add_argument("--train-incrementally", action="store_true",
+                            help="Use incremental instead of batch training when training offline.")
         ImproviseParameters().add_parser_arguments(parser)
         FlaneurParameters().add_parser_arguments(parser)
         HybridParameters().add_parser_arguments(parser)
@@ -263,6 +265,7 @@ class DimensionalityReductionExperiment(Experiment):
     def _prepare_training_data(self):
         if os.path.exists(self._training_data_path):
             self._training_data = storage.load(self._training_data_path)
+            print "data size: %d samples" % len(self._training_data)
         else:
             teacher = Teacher(self.training_entity, self.args.training_data_frame_rate)
             self._training_data = teacher.create_training_data(self._training_duration())
@@ -375,11 +378,14 @@ class DimensionalityReductionExperiment(Experiment):
         
         print "training model..."
         if self.student.supports_incremental_learning():
-            self.student.batch_train(
-                self._training_data,
-                self.args.num_training_epochs,
-                self.args.target_training_loss,
-                self.args.target_loss_slope)
+            if self.args.train_incrementally:
+                self._train_incrementally()
+            else:
+                self.student.batch_train(
+                    self._training_data,
+                    self.args.num_training_epochs,
+                    self.args.target_training_loss,
+                    self.args.target_loss_slope)
         else:
             self.student.fit(self._training_data)
         print "ok"
@@ -388,6 +394,14 @@ class DimensionalityReductionExperiment(Experiment):
         self.student.probe(self._training_data)
         print "ok"
 
+    def _train_incrementally(self):
+        try:
+            for epoch in range(self.args.num_training_epochs):
+                for training_datum in self._training_data:
+                    self.student.train([training_datum])
+        except KeyboardInterrupt:
+            print "Training stopped at epoch %d" % i
+        
     def _print_training_data_stats(self):
         format = "%-5s%-20s%-8s%-8s%-8s%-8s"
         print format % ("n", "descr", "min", "max", "mean", "var")
