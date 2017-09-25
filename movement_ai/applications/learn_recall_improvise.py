@@ -426,9 +426,7 @@ class RecallBehavior(Behavior):
         print state
         self._state = state
         self._state_frames = 0
-        if state == self.IDLE:
-            self._next_recall = self._create_recall()
-        elif state == self.NORMAL:
+        if state == self.NORMAL:
             self._current_recall = self._next_recall
         elif state == self.CROSSFADE:
             self._selector = Selector(self._chainer.switch_source)
@@ -462,6 +460,7 @@ class RecallBehavior(Behavior):
 
     def _proceed_in_idle(self):
         if memory.get_num_frames() >= self._recall_num_frames_including_interpolation:
+            self._next_recall = self._create_recall()
             self._initialize_state(self.NORMAL)
         else:
             self._remaining_frames_to_process = 0
