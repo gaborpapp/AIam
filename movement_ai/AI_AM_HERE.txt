@@ -1,3 +1,11 @@
+PREPARATIONS
+
+python dim_reduce.py -p valencia_pn_autoencoder_z_up -train --num-training-epochs=10 --train-incrementally
+
+---------
+
+RUNTIME
+
 Viewer:
 
 python ui/osc_output_viewer.py scenes/pn-01.22_z_up_xyz_skeleton.bvh --camera=-1.868,-0.480,-1.879,-89.000,1.100 --type=bvh --z-up
