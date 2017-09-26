@@ -6,6 +6,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from collections import defaultdict
+import numpy
 
 import sys
 import os
@@ -24,6 +25,7 @@ CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
 FRAME_RATE = 50
+ORIGIN_SIZE = 1
 
 class Avatar:
     def __init__(self):
@@ -70,8 +72,19 @@ class MainWindow(Window):
 
     def _create_view_menu(self):
         self._view_menu = self._menu_bar.addMenu("View")
+        self._add_origin_action()
         self._add_fullscreen_action()
 
+    def _add_origin_action(self):
+        self._origin_action = QtGui.QAction('Origin', self)
+        self._origin_action.setCheckable(True)
+        self._origin_action.setShortcut('o')
+        self._origin_action.toggled.connect(self._toggled_origin)
+        self._view_menu.addAction(self._origin_action)
+
+    def _toggled_origin(self):
+        self._scene.view_origin = self._origin_action.isChecked()
+        
     def _add_fullscreen_action(self):
         self._fullscreen_action = QtGui.QAction('Fullscreen', self)
         self._fullscreen_action.setCheckable(True)
@@ -100,6 +113,7 @@ class Scene(QtOpenGL.QGLWidget):
         self._current_avatar = None
         self._dragging_orientation = False
         self._dragging_y_position = False
+        self.view_origin = False
         QtOpenGL.QGLWidget.__init__(self)
         self.setMouseTracking(True)
         if args.enable_floor:
@@ -276,9 +290,24 @@ class Scene(QtOpenGL.QGLWidget):
         camera_z = self._camera_position[2]
         if args.enable_floor:
             self._floor.render(0, 0, camera_x, camera_z)
+        if self.view_origin:
+            self._render_origin()
         for avatar in self._avatars.values():
             if avatar.is_renderable:
                 self._render_avatar(avatar)
+
+    def _render_origin(self):
+        glLineWidth(1.0)
+        self._draw_colored_line((1,0,0))
+        self._draw_colored_line((0,1,0))
+        self._draw_colored_line((0,0,1))
+
+    def _draw_colored_line(self, triple):
+        glColor3f(*triple)
+        glBegin(GL_LINES)
+        glVertex3f(0,0,0)
+        glVertex3f(*(numpy.array(triple)*ORIGIN_SIZE))
+        glEnd()
         
     def _render_avatar(self, avatar):
         glColor3f(1, 1, 1)
