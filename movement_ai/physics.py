@@ -57,6 +57,35 @@ class FloorConstrainer:
         offset[self._coordinate_up] = self._floor_y - bottom_y
         return [vertex + offset for vertex in vertices]
 
+class Confinement:
+    def __init__(self, coordinate_up=1, update_rate=0.01):
+        self._coordinate_up = coordinate_up
+        self._target_position = numpy.zeros(3)
+        self._update_rate = update_rate
+        self.enabled = True
+        self.reset()
+
+    def set_update_rate(self, rate):
+        self._update_rate = rate
+        
+    def reset(self):
+        self._translation = None
+
+    def constrain(self, vertices):
+        if not self.enabled:
+            return vertices
+        self._update_translation(vertices)
+        result = [vertex + self._translation for vertex in vertices]
+        return result
+
+    def _update_translation(self, vertices):
+        desired_translation = -vertices[0]
+        desired_translation[self._coordinate_up] = 0
+        if self._translation is None:
+            self._translation = desired_translation
+        else:
+            self._translation += (desired_translation - self._translation) * self._update_rate
+            
 class RandomSlide:
     def __init__(self, speed):
         angle = random.uniform(0, math.pi*2)
@@ -85,15 +114,18 @@ class Constrainers:
                  coordinate_up,
                  enable_friction=False,
                  enable_floor=False,
+                 enable_confinement=False,
                  enable_random_slide=False,
                  random_slide=0.0,
                  enable_circle_slide=False):
         self.enable_friction = enable_friction
         self.enable_floor = enable_floor
+        self.enable_confinement = enable_confinement
         self.enable_random_slide = enable_random_slide
         self.enable_circle_slide = enable_circle_slide
         self._friction = FrictionConstrainer(BalanceDetector(coordinate_up))
         self._floor = FloorConstrainer(coordinate_up)
+        self._confinement = Confinement(coordinate_up)
         self._random_slide = RandomSlide(random_slide)
         self._circle_slide = CircleSlide()
 
@@ -102,6 +134,8 @@ class Constrainers:
             vertices = self._friction.constrain(vertices)
         if self.enable_floor:
             vertices = self._floor.constrain(vertices)
+        if self.enable_confinement:
+            vertices = self._confinement.constrain(vertices)
         if self.enable_random_slide:
             vertices = self._random_slide.constrain(vertices)
         if self.enable_circle_slide:
@@ -113,4 +147,10 @@ class Constrainers:
 
     def reset(self):
         self._friction.reset()
+
+    def set_confinement(self, enable_confinement):
+        self._confinement.enabled = enable_confinement
+
+    def set_confinement_rate(self, rate):
+        self._confinement.set_update_rate(rate)
         

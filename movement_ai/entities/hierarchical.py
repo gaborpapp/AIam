@@ -166,6 +166,7 @@ class Entity(BaseEntity):
         parser.add_argument("--translate", action="store_true")
         parser.add_argument("--translation-weight", type=float, default=1.)
         parser.add_argument("--friction", action="store_true")
+        parser.add_argument("--confinement", action="store_true")
         parser.add_argument("--pose-scale", type=float, default=.5)
         parser.add_argument("--random-slide", type=float, default=0.0)
         parser.add_argument("--circle-slide", action="store_true")
@@ -212,6 +213,7 @@ class Entity(BaseEntity):
             enable_friction=(self.args.friction and not (
                 hasattr(self.args, "show_all_feature_matches") and self.args.show_all_feature_matches)),
             enable_floor=self.floor,
+            enable_confinement=self.args.confinement,
             enable_random_slide=(self.args.random_slide > 0),
             random_slide=self.args.random_slide,
             enable_circle_slide=self.args.circle_slide)
@@ -460,6 +462,14 @@ class Entity(BaseEntity):
     def get_friction(self):
         return self._enable_friction
 
+    def set_confinement(self, enable_confinement):
+        self._normalized_constrainers.set_confinement(enable_confinement)
+        self._unnormalized_constrainers.set_confinement(enable_confinement)
+
+    def set_confinement_rate(self, rate):
+        self._normalized_constrainers.set_confinement_rate(rate)
+        self._unnormalized_constrainers.set_confinement_rate(rate)
+        
     def set_max_angular_step(self, max_angular_step):
         self._max_angular_step = max_angular_step
         for interpolator in self._rotation_interpolators.values():

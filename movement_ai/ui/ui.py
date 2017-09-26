@@ -27,6 +27,7 @@ CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
 FRAME_RATE = 30.0
+ORIGIN_SIZE = 1
 
 FLOOR_RENDERERS = {
     "grid": (FloorGrid, {"num_cells": 30, "size": 100}),
@@ -51,6 +52,7 @@ class BvhScene(Scene):
             self.view_floor = False
         self.view_input = True
         self.view_frame_count = False
+        self.view_origin = False
         self._focus = None
         self.processed_input = None
         self.processed_output = None
@@ -105,6 +107,8 @@ class BvhScene(Scene):
         self.configure_3d_projection()
         if self.view_floor:
             self._draw_floor()
+        if self.view_origin:
+            self._draw_origin()
         if self._parent.focus_action.isChecked():
             self._draw_focus()
         self._update_camera_translation()
@@ -159,6 +163,19 @@ class BvhScene(Scene):
                 camera_x,
                 camera_z)
 
+    def _draw_origin(self):
+        glLineWidth(1.0)
+        self._draw_colored_line((1,0,0))
+        self._draw_colored_line((0,1,0))
+        self._draw_colored_line((0,0,1))
+
+    def _draw_colored_line(self, triple):
+        glColor3f(*triple)
+        glBegin(GL_LINES)
+        glVertex3f(0,0,0)
+        glVertex3f(*(numpy.array(triple)*ORIGIN_SIZE))
+        glEnd()
+        
     def _create_floor_renderer(self):
         kwargs = self._floor_renderer_args
         kwargs["floor_color"] = self._parent.color_scheme["floor"]
@@ -581,6 +598,7 @@ class MainWindow(Window, EventListener):
     def _create_view_menu(self):
         self._view_menu = self._menu_bar.addMenu("View")
         self._add_toolbar_action()
+        self._add_origin_action()
         self._add_fullscreen_action()
         self._add_follow_output_action()
         self._add_assumed_focus_action()
@@ -622,6 +640,16 @@ class MainWindow(Window, EventListener):
             self.enter_fullscreen()
         else:
             self.leave_fullscreen()
+
+    def _add_origin_action(self):
+        self._origin_action = QtGui.QAction('Origin', self)
+        self._origin_action.setCheckable(True)
+        self._origin_action.setShortcut('Shift+o')
+        self._origin_action.toggled.connect(self._toggled_origin)
+        self._view_menu.addAction(self._origin_action)
+
+    def _toggled_origin(self):
+        self._scene.view_origin = self._origin_action.isChecked()
 
     def _add_follow_output_action(self):
         self._follow_action = QtGui.QAction('&Follow output', self)

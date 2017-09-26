@@ -19,7 +19,7 @@ MODELS_INFO = {
         }
     }
 
-ENTITY_ARGS = "-r quaternion --friction --translate"
+ENTITY_ARGS = "-r quaternion --friction --translate --confinement"
 SKELETON_DEFINITION = "scenes/pn-01.22_z_up_xyz_skeleton.bvh"
 NUM_REDUCED_DIMENSIONS = 7
 Z_UP = True
@@ -118,6 +118,8 @@ class UiWindow(BaseUiWindow):
         self._add_model_control()
         self._add_auto_friction_control()
         self._add_friction_control()
+        self._add_confinement_control()
+        self._add_confinement_rate_control()
         self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
         self._add_input_only_control()
@@ -260,6 +262,22 @@ class UiWindow(BaseUiWindow):
         self._friction_checkbox.stateChanged.connect(on_changed_state)
         self._application.on_friction_changed = lambda value: self._friction_checkbox.setChecked(value)
         self._control_layout.add_control_widget(self._friction_checkbox)
+
+    def _add_confinement_control(self):
+        def on_changed_state(checkbox):
+            master_entity.set_confinement(checkbox.isChecked())
+
+        self._control_layout.add_label("Confinement")
+        checkbox = QtGui.QCheckBox()
+        checkbox.setEnabled(True)
+        checkbox.setChecked(True)
+        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
+        self._application.on_confinement_changed = lambda value: checkbox.setChecked(value)
+        self._control_layout.add_control_widget(checkbox)
+        
+    def _add_confinement_rate_control(self):
+        self._control_layout.add_slider_row(
+            "Confinement rate", .1, .01, master_entity.set_confinement_rate)
 
     def _add_improvise_parameters_form(self):
         parameters_form = ParametersForm(improvise_params, control_layout=self._control_layout)
