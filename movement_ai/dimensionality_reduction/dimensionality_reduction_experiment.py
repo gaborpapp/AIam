@@ -400,7 +400,7 @@ class DimensionalityReductionExperiment(Experiment):
                 for training_datum in self._training_data:
                     self.student.train([training_datum])
         except KeyboardInterrupt:
-            print "Training stopped at epoch %d" % i
+            print "Training stopped at epoch %d" % epoch
         
     def _print_training_data_stats(self):
         format = "%-5s%-20s%-8s%-8s%-8s%-8s"
