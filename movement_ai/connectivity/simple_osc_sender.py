@@ -15,8 +15,8 @@ class OscSender:
             self._socket.connect((host, port))
         elif proto == osc.UDP:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            self._host = socket.gethostbyname(host)
-            self._port = port
+            resolved_host = socket.gethostbyname(host)
+            self._address = (resolved_host, port)
         self._lock = threading.Lock()
 
     def send(self, address_pattern, *args):
@@ -30,7 +30,7 @@ class OscSender:
             size_int32 = struct.pack(">i", len(message))
             self._socket.send(size_int32)
         elif self._proto == osc.UDP:
-            self._socket.sendto(message, (self._host, self._port))
+            self._socket.sendto(message, self._address)
 
     def _generate_message(self, address_pattern, *args):
         message = self._osc_string(address_pattern)
