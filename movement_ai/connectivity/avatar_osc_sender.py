@@ -9,6 +9,9 @@ class AvatarOscSender:
     def reset(self):
         self._osc_sender = OscSender(self._host, self._port)
         self._frame_index = 0
+
+    def get_status(self):
+        return self._osc_sender.get_status()
             
 class AvatarOscWorldSender(AvatarOscSender):
     def send_frame(self, avatar_index, output, entity):

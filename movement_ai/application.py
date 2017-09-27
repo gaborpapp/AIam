@@ -37,7 +37,7 @@ class Application:
     def __init__(self, student, avatars, args, receive_from_pn=False, create_entity=None):
         self._student = student
         self._avatars = avatars
-        self._args = args
+        self.args = args
         self.receive_from_pn = receive_from_pn
         self._create_entity = create_entity
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -54,27 +54,27 @@ class Application:
             self._pn_receiver.show_fps = value
 
     def initialize(self):
-        if self._args.random_seed is not None:
-            random.seed(self._args.random_seed)
+        if self.args.random_seed is not None:
+            random.seed(self.args.random_seed)
 
         if self.receive_from_pn:
             self.on_pn_connection_status_changed(False)
             self.try_connect_to_pn()
             
-        if self._args.output_receiver_host:
+        if self.args.output_receiver_host:
             from connectivity import avatar_osc_sender
-            if self._args.output_receiver_type == "world":
+            if self.args.output_receiver_type == "world":
                 self._output_sender = avatar_osc_sender.AvatarOscWorldSender(
-                    self._args.output_receiver_port, self._args.output_receiver_host)
-            elif self._args.output_receiver_type == "bvh":
+                    self.args.output_receiver_port, self.args.output_receiver_host)
+            elif self.args.output_receiver_type == "bvh":
                 self._output_sender = avatar_osc_sender.AvatarOscBvhSender(
-                    self._args.output_receiver_port, self._args.output_receiver_host)
+                    self.args.output_receiver_port, self.args.output_receiver_host)
         else:
             self._output_sender = None
             
-        self._training_data = collections.deque([], maxlen=self._args.memory_size)
+        self._training_data = collections.deque([], maxlen=self.args.memory_size)
         self._input = None
-        self._desired_frame_duration = 1.0 / self._args.frame_rate
+        self._desired_frame_duration = 1.0 / self.args.frame_rate
         self._frame_count = 0
         self._previous_frame_time = None
         self._fps_meter = FpsMeter("output")
@@ -93,14 +93,14 @@ class Application:
 
         def process_frame(frame):
             input_from_pn = pn_entity.get_value_from_frame(
-                frame, convert_to_z_up=self._args.pn_convert_to_z_up)
+                frame, convert_to_z_up=self.args.pn_convert_to_z_up)
             input_from_pn[0:3] += pn_translation_offset
             self.set_input(input_from_pn)
 
         self._pn_receiver = tracking.pn.receiver.PnReceiver()
         self.print_and_log("connecting to PN server...")
         try:
-            self._pn_receiver.connect(self._args.pn_host, self._args.pn_port)
+            self._pn_receiver.connect(self.args.pn_host, self.args.pn_port)
         except Exception as exception:
             self.print_and_log("Failed: %s" % exception)
             return
@@ -108,9 +108,9 @@ class Application:
         self._pn_receiver.show_fps = self._show_fps
         self.on_pn_connection_status_changed(True)
         pn_entity = self._create_entity()
-        if self._args.pn_translation_offset:
+        if self.args.pn_translation_offset:
             pn_translation_offset = numpy.array(
-                [float(string) for string in self._args.pn_translation_offset.split(",")])
+                [float(string) for string in self.args.pn_translation_offset.split(",")])
         else:
             pn_translation_offset = numpy.array([0,0,0])
         pn_receiver_thread = threading.Thread(target=lambda: receive_from_pn(pn_entity))
@@ -145,7 +145,7 @@ class Application:
         now = time.time()
         if self._input is not None and self._student.supports_incremental_learning():
             self._student.train([self._input])
-            if self._frame_count % self._args.training_data_interval == 0:
+            if self._frame_count % self.args.training_data_interval == 0:
                 self._training_data.append(self._input)
                 self._student.probe(self._training_data)
         
@@ -165,7 +165,7 @@ class Application:
                     output = self._student.inverse_transform(numpy.array([reduction]))[0]
             if output is not None:
                 if self._output_sender is not None:
-                    self._send_output(avatar, output)
+                    self._send_output_and_handle_sender_status(avatar, output)
 
         self._previous_frame_time = now
         self._frame_count += 1
@@ -176,8 +176,13 @@ class Application:
     def training_data_size(self):
         return len(self._training_data)
 
-    def _send_output(self, avatar, output):
+    def _send_output_and_handle_sender_status(self, avatar, output):
         self._output_sender.send_frame(avatar.index, output, avatar.entity)
+        status = self._output_sender.get_status()
+        self.on_output_sender_status_changed(status)
+
+    def on_output_sender_status_changed(self):
+        pass
 
     def _wait_until_next_frame_is_timely(self):
         frame_duration = time.time() - self._frame_start_time
@@ -284,10 +289,13 @@ class BaseUiWindow(QtGui.QWidget):
         self.setLayout(self._control_layout.layout)
         if application.receive_from_pn:
             self._add_pn_connection_status()
+        if application.args.output_receiver_host:
+            self._add_output_sender_status()
         self._add_training_data_size_label()
         self._create_menu()
 
         application.on_pn_connection_status_changed = self._update_pn_connection_status_label
+        application.on_output_sender_status_changed = self._update_output_sender_status_label
         
         timer = QtCore.QTimer(self)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self._update)
@@ -317,6 +325,19 @@ class BaseUiWindow(QtGui.QWidget):
         else:
             self._pn_connection_status_label.setText("Disconnected")
             self._pn_connection_status_label.setStyleSheet("QLabel { background-color : red; }")
+
+    def _add_output_sender_status(self):
+        self._control_layout.add_label("OSC sender status")
+        self._output_sender_status_label = QtGui.QLabel("")
+        self._control_layout.add_control_widget(self._output_sender_status_label)
+
+    def _update_output_sender_status_label(self, status):
+        if status == True:
+            self._output_sender_status_label.setText("OK")
+            self._output_sender_status_label.setStyleSheet("QLabel { background-color : green; }")
+        else:
+            self._output_sender_status_label.setText("Error")
+            self._output_sender_status_label.setStyleSheet("QLabel { background-color : red; }")
             
     def _create_menu(self):
         self._menu_bar = QtGui.QMenuBar()
