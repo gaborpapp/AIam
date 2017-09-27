@@ -133,9 +133,13 @@ class Application:
         self._student = student
 
     def update_if_timely(self):
-        if self._previous_frame_time is None or \
-           time.time() - self._previous_frame_time >= self._desired_frame_duration:
-            self.update()
+        try:
+            if self._previous_frame_time is None or \
+               time.time() - self._previous_frame_time >= self._desired_frame_duration:
+                self.update()
+        except Exception as exception:
+            print "EXCEPTION:", exception
+            self._logger.error(exception, exc_info=True)
 
     def update(self):
         now = time.time()
