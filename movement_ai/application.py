@@ -3,6 +3,7 @@ import numpy
 import random
 import collections
 import threading
+import logging
 from PyQt4 import QtGui, QtCore
 
 from entities.hierarchical import Entity
@@ -39,6 +40,7 @@ class Application:
         self._args = args
         self.receive_from_pn = receive_from_pn
         self._create_entity = create_entity
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._pn_receiver = None
         self.set_show_fps(args.show_fps)
 
@@ -50,7 +52,7 @@ class Application:
         self._show_fps = value
         if self._pn_receiver is not None:
             self._pn_receiver.show_fps = value
-        
+
     def initialize(self):
         if self._args.random_seed is not None:
             random.seed(self._args.random_seed)
@@ -86,7 +88,7 @@ class Application:
                 for frame in self._pn_receiver.get_frames():
                     process_frame(frame)
             except tracking.pn.receiver.RemotePeerShutDown:
-                print "Lost connection to PN!"
+                self.print_and_log("Lost connection to PN!")
                 self.on_pn_connection_status_changed(False)
 
         def process_frame(frame):
@@ -96,13 +98,13 @@ class Application:
             self.set_input(input_from_pn)
 
         self._pn_receiver = tracking.pn.receiver.PnReceiver()
-        print "connecting to PN server..."
+        self.print_and_log("connecting to PN server...")
         try:
             self._pn_receiver.connect(self._args.pn_host, self._args.pn_port)
         except Exception as exception:
-            print "Failed: %s" % exception
+            self.print_and_log("Failed: %s" % exception)
             return
-        print "ok"
+        self.print_and_log("ok")
         self._pn_receiver.show_fps = self._show_fps
         self.on_pn_connection_status_changed(True)
         pn_entity = self._create_entity()
@@ -186,9 +188,14 @@ class Application:
 
     def on_changed_friction(self, value):
         pass
+
+    def print_and_log(self, message):
+        print message
+        self._logger.info(message)
         
 class Memory:
     def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self.clear()
 
     def clear(self):
@@ -227,19 +234,19 @@ class Memory:
             min_cursor = max(self.get_num_frames() - recency_num_frames, 0)
         cursor = int(random.uniform(min_cursor, max_cursor))
         time_direction = 1
-        print "normal recall from %s" % cursor
+        self._logger.debug("normal recall from %s" % cursor)
         return Recall(self, cursor, time_direction)
 
     def _create_reverse_recall(self, num_frames_to_recall):
         max_cursor = self.get_num_frames() - num_frames_to_recall
         cursor = int(random.random() * max_cursor) + num_frames_to_recall
         time_direction = -1
-        print "reverse recall from %s" % cursor
+        self._logger.debug("reverse recall from %s" % cursor)
         return Recall(self, cursor, time_direction)
 
     def on_frames_changed(self):
         pass
-    
+        
 class Recall:
     def __init__(self, memory, cursor, time_direction):
         self._memory = memory
@@ -339,3 +346,10 @@ class BaseUiWindow(QtGui.QWidget):
         action.triggered.connect(QtGui.QApplication.exit)
         self._main_menu.addAction(action)
         
+def set_up_logging():
+    logging.basicConfig(
+        format="%(asctime)s %(name)-20s %(levelname)-8s %(message)s",
+        level=logging.DEBUG,
+        filename="logs/application.log",
+        filemode="w")
+

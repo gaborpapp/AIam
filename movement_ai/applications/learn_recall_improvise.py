@@ -33,12 +33,13 @@ from argparse import ArgumentParser
 import numpy
 import random
 import math
+import logging
 from PyQt4 import QtGui, QtCore
 
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/..")
-from application import Application, Avatar, BaseUiWindow, Memory, Recall
+from application import Application, Avatar, BaseUiWindow, Memory, Recall, set_up_logging
 from entities.hierarchical import Entity
 from bvh.bvh_reader import BvhReader
 from dimensionality_reduction.behavior import Behavior
@@ -369,7 +370,7 @@ class MasterBehavior(Behavior):
             
         if recall_output is None:
             if self._recall_amount > 0:
-                print "WARNING: recall amount > 0 but no recall output"
+                application.print_and_log("WARNING: recall amount > 0 but no recall output")
             translation = self._pass_through_selector_to_update_its_state(
                 get_translation(improvise_output))
             orientations = get_orientations(improvise_output)
@@ -421,6 +422,7 @@ class RecallBehavior(Behavior):
     CROSSFADE = "CROSSFADE"
     
     def __init__(self):
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._recall_num_frames = int(round(args.recall_duration * args.frame_rate))
         self._interpolation_num_frames = int(round(self.interpolation_duration * args.frame_rate))
         self._recall_num_frames_including_interpolation = self._recall_num_frames + \
@@ -441,7 +443,7 @@ class RecallBehavior(Behavior):
         self._chainer = Chainer()
 
     def _initialize_state(self, state):
-        print state
+        self._logger.debug("initialize %s" % state)
         self._state = state
         self._state_frames = 0
         if state == self.NORMAL:
@@ -454,9 +456,9 @@ class RecallBehavior(Behavior):
     def _create_recall(self):
         if random.random() < self._recall_recency_bias:
             recency_num_frames = self._recall_recency_num_frames
-            print "RECALL WITH RECENCY"
+            self._logger.debug("recall with recency")
         else:
-            print "RECALL FROM ENTIRE MEMORY"
+            self._logger.debug("recall from entire memory")
             recency_num_frames = None
             
         return memory.create_random_recall(
@@ -565,6 +567,8 @@ improvise_params = ImproviseParameters()
 improvise_behaviors = {
     model_name: _create_improvise_behavior(model_name)
     for model_name in MODELS}
+
+set_up_logging()
 
 index = 0
 memory = Memory()
