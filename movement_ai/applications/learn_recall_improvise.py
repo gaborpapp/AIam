@@ -123,6 +123,7 @@ class UiWindow(BaseUiWindow):
         self._add_confinement_rate_control()
         self._add_max_angular_step_control()
         self._add_improvise_parameters_form()
+        self._add_noise_control()
         self._add_input_only_control()
         master_behavior.on_recall_amount_changed = self._update_recall_amount_slider
         memory.on_frames_changed = self._update_memory_size_label
@@ -282,6 +283,10 @@ class UiWindow(BaseUiWindow):
 
     def _add_improvise_parameters_form(self):
         parameters_form = ParametersForm(improvise_params, control_layout=self._control_layout)
+        
+    def _add_noise_control(self):
+        self._control_layout.add_slider_row(
+            "Noise amount", .01, 0., master_behavior.set_noise_amount)
 
     def _add_input_only_control(self):
         def on_changed_state(checkbox):
@@ -304,10 +309,14 @@ class MasterBehavior(Behavior):
         self._auto_switch_enabled = False
         self.input_only = False
         self._input = None
+        self._noise_amount = 0
         self.reset_translation()
         self._stopwatch = Stopwatch()
         self._stopwatch.start()
 
+    def set_noise_amount(self, amount):
+        self._noise_amount = amount
+        
     def reset_translation(self):
         master_entity.reset_constrainers()
         self._chainer = Chainer()
@@ -330,6 +339,8 @@ class MasterBehavior(Behavior):
         self._chainer.switch_source()
 
     def proceed(self, time_increment):
+        if self._noise_amount > 0:
+            students["autoencoder"].add_noise(self._noise_amount)
         self._improvise.proceed(time_increment)
         recall_behavior.proceed(time_increment)
         if self.auto_friction:
