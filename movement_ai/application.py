@@ -11,6 +11,8 @@ import tracking.pn.receiver
 from fps_meter import FpsMeter
 from ui.control_layout import ControlLayout
 
+FpsMeter.print_fps = False
+
 class Avatar:
     def __init__(self, index, entity, behavior):
         self.index = index
@@ -25,7 +27,6 @@ class Application:
         parser.add_argument("--pn-convert-to-z-up", action="store_true")
         parser.add_argument("--pn-translation-offset")
         parser.add_argument("--frame-rate", type=float, default=30.0)
-        parser.add_argument("--show-fps", action="store_true")
         parser.add_argument("--output-receiver-host")
         parser.add_argument("--output-receiver-port", type=int, default=10000)
         parser.add_argument("--output-receiver-type", choices=["bvh", "world"], default="bvh")
@@ -42,16 +43,6 @@ class Application:
         self._create_entity = create_entity
         self._logger = logging.getLogger(self.__class__.__name__)
         self._pn_receiver = None
-        self.set_show_fps(args.show_fps)
-
-    @property
-    def show_fps(self):
-        return self._show_fps
-    
-    def set_show_fps(self, value):
-        self._show_fps = value
-        if self._pn_receiver is not None:
-            self._pn_receiver.show_fps = value
 
     def initialize(self):
         if self.args.random_seed is not None:
@@ -98,6 +89,7 @@ class Application:
             self.set_input(input_from_pn)
 
         self._pn_receiver = tracking.pn.receiver.PnReceiver()
+        self._pn_receiver.on_fps_changed = self.on_pn_fps_changed
         self.print_and_log("connecting to PN server...")
         try:
             self._pn_receiver.connect(self.args.pn_host, self.args.pn_port)
@@ -105,7 +97,6 @@ class Application:
             self.print_and_log("Failed: %s" % exception)
             return
         self.print_and_log("ok")
-        self._pn_receiver.show_fps = self._show_fps
         self.on_pn_connection_status_changed(True)
         pn_entity = self._create_entity()
         if self.args.pn_translation_offset:
@@ -119,7 +110,10 @@ class Application:
 
     def on_pn_connection_status_changed(self, status):
         pass
-    
+
+    def on_pn_fps_changed(self, fps):
+        pass
+        
     def main_loop(self):
         while True:
             self._frame_start_time = time.time()
@@ -169,9 +163,12 @@ class Application:
 
         self._previous_frame_time = now
         self._frame_count += 1
-        if self.show_fps:
-            self._fps_meter.update()
+        self._fps_meter.update()
+        self.on_output_fps_changed(self._fps_meter.get_fps())
 
+    def on_output_fps_changed(self, fps):
+        pass
+    
     @property
     def training_data_size(self):
         return len(self._training_data)
@@ -289,13 +286,17 @@ class BaseUiWindow(QtGui.QWidget):
         self.setLayout(self._control_layout.layout)
         if application.receive_from_pn:
             self._add_pn_connection_status()
+            self._add_pn_fps_label()
+            application.on_pn_fps_changed = self._update_pn_fps_label
         if application.args.output_receiver_host:
             self._add_output_sender_status()
+        self._add_output_fps_label()
         self._add_training_data_size_label()
         self._create_menu()
 
         application.on_pn_connection_status_changed = self._update_pn_connection_status_label
         application.on_output_sender_status_changed = self._update_output_sender_status_label
+        application.on_output_fps_changed = self._update_output_fps_label
         
         timer = QtCore.QTimer(self)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self._update)
@@ -326,6 +327,15 @@ class BaseUiWindow(QtGui.QWidget):
             self._pn_connection_status_label.setText("Disconnected")
             self._pn_connection_status_label.setStyleSheet("QLabel { background-color : red; }")
 
+    def _add_pn_fps_label(self):
+        self._control_layout.add_label("PN frame rate")
+        self._pn_fps_label = QtGui.QLabel("")
+        self._control_layout.add_control_widget(self._pn_fps_label)
+
+    def _update_pn_fps_label(self, fps):
+        if fps is not None:
+            self._pn_fps_label.setText("%.1f" % fps)
+        
     def _add_output_sender_status(self):
         self._control_layout.add_label("OSC sender status")
         self._output_sender_status_label = QtGui.QLabel("")
@@ -338,6 +348,15 @@ class BaseUiWindow(QtGui.QWidget):
         else:
             self._output_sender_status_label.setText("Error")
             self._output_sender_status_label.setStyleSheet("QLabel { background-color : red; }")
+
+    def _add_output_fps_label(self):
+        self._control_layout.add_label("Output frame rate")
+        self._output_fps_label = QtGui.QLabel("")
+        self._control_layout.add_control_widget(self._output_fps_label)
+
+    def _update_output_fps_label(self, fps):
+        if fps is not None:
+            self._output_fps_label.setText("%.1f" % fps)
             
     def _create_menu(self):
         self._menu_bar = QtGui.QMenuBar()
@@ -350,7 +369,6 @@ class BaseUiWindow(QtGui.QWidget):
             self._add_connect_to_pn_action()
         self._add_reset_model_action()
         self._add_reset_output_sender_action()
-        self._add_show_fps_action()
         self._add_quit_action()
 
     def _add_connect_to_pn_action(self):
@@ -366,16 +384,6 @@ class BaseUiWindow(QtGui.QWidget):
     def _add_reset_output_sender_action(self):
         action = QtGui.QAction('Reset OSC sender', self)
         action.triggered.connect(self._application.reset_output_sender)
-        self._main_menu.addAction(action)
-
-    def _add_show_fps_action(self):
-        def on_triggered(checked):
-            self._application.set_show_fps(checked)
-        
-        action = QtGui.QAction("Show frame rate", self)
-        action.setCheckable(True)
-        action.setChecked(self._application.show_fps)
-        action.triggered.connect(lambda checked: on_triggered(checked))
         self._main_menu.addAction(action)
 
     def _add_quit_action(self):

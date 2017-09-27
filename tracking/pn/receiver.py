@@ -20,7 +20,6 @@ class RemotePeerShutDown(Exception):
 
 class PnReceiver:
     def __init__(self):
-        self.show_fps = False
         self._fps_meter = FpsMeter("PnReceiver")
         
     def connect(self, host, port):
@@ -50,6 +49,9 @@ class PnReceiver:
         values_as_floats = [float(string)
                             for string in values_as_strings
                             if len(string) > 0]
-        if self.show_fps:
-            self._fps_meter.update()
+        self._fps_meter.update()
+        self.on_fps_changed(self._fps_meter.get_fps())
         return values_as_floats
+
+    def on_fps_changed(self, fps):
+        pass
