@@ -438,12 +438,13 @@ class RecallBehavior(Behavior):
         self._recall_recency_bias = value
         
     def reset(self):
+        self._logger.debug("reset()")
         self._initialize_state(self.IDLE)
         self._output = None
         self._chainer = Chainer()
 
     def _initialize_state(self, state):
-        self._logger.debug("initialize %s" % state)
+        self._logger.debug("_initialize_state(%s)" % state)
         self._state = state
         self._state_frames = 0
         if state == self.NORMAL:
@@ -454,6 +455,7 @@ class RecallBehavior(Behavior):
             self._interpolation_crossed_halfway = False
 
     def _create_recall(self):
+        self._logger.debug("_create_recall()")
         if random.random() < self._recall_recency_bias:
             recency_num_frames = self._recall_recency_num_frames
             self._logger.debug("recall with recency")
@@ -466,7 +468,9 @@ class RecallBehavior(Behavior):
             recency_num_frames=recency_num_frames)
 
     def proceed(self, time_increment):
+        self._logger.debug("proceed(%s)" % time_increment)
         self._remaining_frames_to_process = int(round(time_increment * args.frame_rate))
+        self._logger.debug("_remaining_frames_to_process=%s" % self._remaining_frames_to_process)
         while self._remaining_frames_to_process > 0:
             self._proceed_within_state()
 
@@ -479,6 +483,7 @@ class RecallBehavior(Behavior):
             self._proceed_in_crossfade()
 
     def _proceed_in_idle(self):
+        self._logger.debug("_proceed_in_idle()")
         if memory.get_num_frames() >= self._recall_num_frames_including_interpolation:
             self._next_recall = self._create_recall()
             self._initialize_state(self.NORMAL)
@@ -486,12 +491,15 @@ class RecallBehavior(Behavior):
             self._remaining_frames_to_process = 0
 
     def _proceed_in_normal(self):
+        self._logger.debug("_proceed_in_normal()")
         remaining_frames_in_state = self._recall_num_frames - self._state_frames
+        self._logger.debug("remaining_frames_in_state=%s" % remaining_frames_in_state)
         if remaining_frames_in_state == 0:
             self._initialize_state(self.CROSSFADE)
             return
         
         frames_to_process = min(self._remaining_frames_to_process, remaining_frames_in_state)
+        self._logger.debug("frames_to_process=%s" % frames_to_process)
         self._current_recall.proceed(frames_to_process)
 
         output = self._pass_through_interpolation_to_update_its_state(
@@ -510,12 +518,15 @@ class RecallBehavior(Behavior):
         return recall_entity.interpolate(output, output, 0)
 
     def _proceed_in_crossfade(self):
+        self._logger.debug("_proceed_in_crossfade()")
         remaining_frames_in_state = self._interpolation_num_frames - self._state_frames
+        self._logger.debug("remaining_frames_in_state=%s" % remaining_frames_in_state)
         if remaining_frames_in_state == 0:
             self._initialize_state(self.NORMAL)
             return
                 
         frames_to_process = min(self._remaining_frames_to_process, remaining_frames_in_state)
+        self._logger.debug("frames_to_process=%s" % frames_to_process)
         self._current_recall.proceed(frames_to_process)
         self._next_recall.proceed(frames_to_process)
         
