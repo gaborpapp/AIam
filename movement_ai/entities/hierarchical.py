@@ -167,6 +167,7 @@ class Entity(BaseEntity):
         parser.add_argument("--translation-weight", type=float, default=1.)
         parser.add_argument("--friction", action="store_true")
         parser.add_argument("--confinement", action="store_true")
+        parser.add_argument("--confinement-rate", type=float, default=0.03)
         parser.add_argument("--pose-scale", type=float, default=.5)
         parser.add_argument("--random-slide", type=float, default=0.0)
         parser.add_argument("--circle-slide", action="store_true")
@@ -214,6 +215,7 @@ class Entity(BaseEntity):
                 hasattr(self.args, "show_all_feature_matches") and self.args.show_all_feature_matches)),
             enable_floor=self.floor,
             enable_confinement=self.args.confinement,
+            confinement_rate=self.args.confinement_rate,
             enable_random_slide=(self.args.random_slide > 0),
             random_slide=self.args.random_slide,
             enable_circle_slide=self.args.circle_slide)

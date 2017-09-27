@@ -77,6 +77,7 @@ def create_entity():
 
 master_entity = create_entity()
 recall_entity = create_entity()
+master_entity.set_confinement_rate(args.confinement_rate)
 
 def _create_and_load_student(model_name):
     model_info = MODELS_INFO[model_name]
@@ -279,7 +280,7 @@ class UiWindow(BaseUiWindow):
         
     def _add_confinement_rate_control(self):
         self._control_layout.add_slider_row(
-            "Confinement rate", .1, .01, master_entity.set_confinement_rate)
+            "Confinement rate", .1, args.confinement_rate, master_entity.set_confinement_rate)
 
     def _add_improvise_parameters_form(self):
         parameters_form = ParametersForm(improvise_params, control_layout=self._control_layout)

@@ -58,7 +58,7 @@ class FloorConstrainer:
         return [vertex + offset for vertex in vertices]
 
 class Confinement:
-    def __init__(self, coordinate_up=1, update_rate=0.01):
+    def __init__(self, coordinate_up=1, update_rate=None):
         self._coordinate_up = coordinate_up
         self._target_position = numpy.zeros(3)
         self._update_rate = update_rate
@@ -72,7 +72,7 @@ class Confinement:
         self._translation = None
 
     def constrain(self, vertices):
-        if not self.enabled:
+        if not self.enabled or self._update_rate is None:
             return vertices
         self._update_translation(vertices)
         result = [vertex + self._translation for vertex in vertices]
@@ -115,6 +115,7 @@ class Constrainers:
                  enable_friction=False,
                  enable_floor=False,
                  enable_confinement=False,
+                 confinement_rate=None,
                  enable_random_slide=False,
                  random_slide=0.0,
                  enable_circle_slide=False):
@@ -125,7 +126,7 @@ class Constrainers:
         self.enable_circle_slide = enable_circle_slide
         self._friction = FrictionConstrainer(BalanceDetector(coordinate_up))
         self._floor = FloorConstrainer(coordinate_up)
-        self._confinement = Confinement(coordinate_up)
+        self._confinement = Confinement(coordinate_up, confinement_rate)
         self._random_slide = RandomSlide(random_slide)
         self._circle_slide = CircleSlide()
 
