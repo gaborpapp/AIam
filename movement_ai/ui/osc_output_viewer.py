@@ -120,7 +120,7 @@ class Scene(QtOpenGL.QGLWidget):
             self._floor = FloorCheckerboard(**FLOOR_ARGS)
 
         self._osc_receiver = OscReceiver(args.port)
-        self._osc_receiver.add_method("/avatar_begin", "i", self._handle_avatar_begin)
+        self._osc_receiver.add_method("/avatar_begin", "ii", self._handle_avatar_begin)
         self._osc_receiver.add_method("/avatar_end", "", self._handle_avatar_end)
         if self.args.type == "bvh":
             self._osc_receiver.add_method("/translation", "iifff", self._handle_translation)
