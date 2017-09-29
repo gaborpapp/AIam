@@ -240,18 +240,23 @@ class Memory:
             return self._create_normal_recall(num_frames_to_recall, recency_num_frames)
 
     def _create_normal_recall(self, num_frames_to_recall, recency_num_frames=None):
-        max_cursor = max(self.get_num_frames() - num_frames_to_recall - 1, 0)
         if recency_num_frames is None:
-            min_cursor = 0
+            recency_num_frames = self.get_num_frames()
         else:
-            min_cursor = max(self.get_num_frames() - recency_num_frames, 0)
+            if recency_num_frames > self.get_num_frames():
+                recency_num_frames = self.get_num_frames()
+            if recency_num_frames < num_frames_to_recall:
+                recency_num_frames = num_frames_to_recall
+    
+        min_cursor = self.get_num_frames() - recency_num_frames
+        max_cursor = self.get_num_frames() - num_frames_to_recall
         cursor = random.randint(min_cursor, max_cursor)
         time_direction = 1
         self._logger.debug("normal recall from %s" % cursor)
         return Recall(self, cursor, time_direction)
 
     def _create_reverse_recall(self, num_frames_to_recall):
-        max_cursor = max(self.get_num_frames() - num_frames_to_recall - 1, 0)
+        max_cursor = max(self.get_num_frames() - num_frames_to_recall, 0)
         cursor = random.randint(0, max_cursor) + num_frames_to_recall
         time_direction = -1
         self._logger.debug("reverse recall from %s" % cursor)
