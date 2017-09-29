@@ -66,3 +66,28 @@ class CreateRecallTestCase(unittest.TestCase):
         self.when_create_random_recall(num_frames_to_recall=8, recency_num_frames=None)
         self.then_rantint_invoked_with(0, 0)
 
+class GetFrameByIndexTestCase(unittest.TestCase):
+    def given_memory_with_frames(self, frames):
+        self._memory = application.Memory()
+        self._memory.set_frames(frames)
+
+    def when_get_frame_by_index(self, index):
+        self._result = self._memory.get_frame_by_index(index)
+
+    def then_result_is(self, expected_result):
+        self.assertEquals(expected_result, self._result)
+        
+    def test_base_case(self):
+        self.given_memory_with_frames(["a", "b", "c"])
+        self.when_get_frame_by_index(1)
+        self.then_result_is("b")
+        
+    def test_negative_index_returns_first_element(self):
+        self.given_memory_with_frames(["a", "b", "c"])
+        self.when_get_frame_by_index(-1)
+        self.then_result_is("a")
+        
+    def test_too_high_index_returns_last_element(self):
+        self.given_memory_with_frames(["a", "b", "c"])
+        self.when_get_frame_by_index(3)
+        self.then_result_is("c")

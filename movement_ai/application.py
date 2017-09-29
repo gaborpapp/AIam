@@ -226,8 +226,20 @@ class Memory:
     
     def get_frame_by_index(self, index):
         self._logger.debug("get_frame_by_index(%s)" % index)
+        
+        if index < 0:
+            self._warn_and_log("get_frame_by_index called with negative index. Returning first element.")
+            index = 0
+        elif index >= len(self._frames):
+            self._warn_and_log("get_frame_by_index called with too high index. Returning last element.")
+            index = -1
+            
         return self._frames[index]
-    
+
+    def _warn_and_log(self, message):
+        print "WARNING: %s" % message
+        self._logger.warn(message)
+        
     def create_random_recall(self, num_frames_to_recall,
                              reverse_recall_probability=0,
                              recency_num_frames=None):
