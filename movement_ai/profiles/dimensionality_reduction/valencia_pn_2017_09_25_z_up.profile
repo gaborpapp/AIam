@@ -1,0 +1,1 @@
+-entity hierarchical --reduction-type=KernelPCA --pca-kernel=poly -r quaternion -bvh scenes/pn_2017_09_25_xyz_z_up/*.bvh --z-up -training-data-frame-rate 2 -n 7 --camera=-1.868,-0.480,-1.879,-51.300,0.700 --friction --floor  --enable-shadow --enable-light-source --max-novelty=1.4 --translate --translation-weight=0

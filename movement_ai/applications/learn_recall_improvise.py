@@ -11,11 +11,15 @@ MODELS_INFO = {
     "pca": {
         # "path": "profiles/dimensionality_reduction/valencia_pn_z_up.model",
         # "dimensionality_reduction_type": "KernelPCA",
-        # "dimensionality_reduction_args": "--pca-kernel=rbf",
+        # "dimensionality_reduction_args": "",
         
-        "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_z_up.model",
+        # "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_z_up.model",
+        # "dimensionality_reduction_type": "KernelPCA",
+        # "dimensionality_reduction_args": "",
+        
+        "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_25_z_up.model",
         "dimensionality_reduction_type": "KernelPCA",
-        "dimensionality_reduction_args": "--pca-kernel=rbf"
+        "dimensionality_reduction_args": "",
         }
     }
 
@@ -587,6 +591,7 @@ def _create_improvise_behavior(model_name):
         MAX_NOVELTY)
 
 improvise_params = ImproviseParameters()
+improvise_params.set_values_from_args(args)
 improvise_behaviors = {
     model_name: _create_improvise_behavior(model_name)
     for model_name in MODELS}
