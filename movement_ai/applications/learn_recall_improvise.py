@@ -29,7 +29,6 @@ NUM_REDUCED_DIMENSIONS = 7
 Z_UP = True
 FLOOR = True
 MAX_NOVELTY = 4#1.4
-SLIDER_PRECISION = 1000
 MAX_LEARNING_RATE = 0.01
 MAX_RECALL_RECENCY_SIZE = 60
 
@@ -130,7 +129,7 @@ class UiWindow(BaseUiWindow):
         self._add_improvise_parameters_form()
         self._add_noise_control()
         self._add_input_only_control()
-        master_behavior.on_recall_amount_changed = self._update_recall_amount_slider
+        master_behavior.on_recall_amount_changed = self._update_recall_amount_control
         memory.on_frames_changed = self._update_memory_size_label
         memory.on_frames_changed()
 
@@ -199,18 +198,17 @@ class UiWindow(BaseUiWindow):
         self._control_layout.add_control_widget(checkbox)
 
     def _add_recall_amount_control(self):
-        self._recall_amount_slider = self._control_layout.add_slider_row(
+        self._recall_amount_control = self._control_layout.add_slider_row(
             "Recall amount", 1., args.recall_amount,
             master_behavior.set_recall_amount)
         
-    def _update_recall_amount_slider(self):
-        # TODO: move logic to control_layout - this version doesn't take max value into account
-        self._recall_amount_slider.setValue(master_behavior.get_recall_amount() * SLIDER_PRECISION)
+    def _update_recall_amount_control(self):
+        self._recall_amount_control.set_value(master_behavior.get_recall_amount())
         
     def _add_auto_switch_control(self):
         def on_changed_state(checkbox):
             master_behavior.set_auto_switch_enabled(checkbox.isChecked())
-            self._recall_amount_slider.setEnabled(not checkbox.isChecked())
+            self._recall_amount_control.set_enabled(not checkbox.isChecked())
 
         self._control_layout.add_label("Auto switch")
         checkbox = QtGui.QCheckBox()
