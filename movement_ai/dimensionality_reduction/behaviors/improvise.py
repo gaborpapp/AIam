@@ -47,7 +47,7 @@ class ImproviseParameters(Parameters):
         self.add_parameter("location_preference", type=float, default=0,
                            choices=ParameterFloatRange(0., 1.))
         self.add_parameter("factor", type=float, default=1,
-                           choices=ParameterFloatRange(0., 10.))
+                           choices=ParameterFloatRange(1., 10.))
 
 class Improvise(Behavior):
     def __init__(self, student, num_components, params, preferred_location, max_novelty, on_changed_path=None):
