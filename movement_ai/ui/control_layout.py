@@ -3,9 +3,11 @@ from PyQt4 import QtGui, QtCore
 SLIDER_PRECISION = 1000
 
 class Control:
-    def __init__(self, label, max_value, default_value, on_changed_value, label_precision=4):
+    def __init__(self, label, min_value, max_value, default_value, on_changed_value, label_precision=4):
         self._label = label
+        self._min_value = min_value
         self._max_value = max_value
+        self._range = max_value - min_value
         self._value_widget = QtGui.QLabel()
         self._value_widget.setFixedWidth(60)
         
@@ -13,12 +15,12 @@ class Control:
             slider = QtGui.QSlider(QtCore.Qt.Horizontal)
             slider.setRange(0, SLIDER_PRECISION)
             slider.setSingleStep(1)
-            slider.setValue(default_value / max_value * SLIDER_PRECISION)
+            slider.setValue(self._value_to_slider_value(default_value))
             slider.valueChanged.connect(on_changed_slider_value)
             return slider
 
         def on_changed_slider_value(slider_value):
-            value = float(slider_value) / SLIDER_PRECISION * max_value
+            value = self._slider_value_to_value(slider_value)
             update_value_widget(value)
             on_changed_value(value)
 
@@ -28,6 +30,12 @@ class Control:
 
         self._slider = create_slider()
         update_value_widget(default_value)
+
+    def _value_to_slider_value(self, value):
+        return (value - self._min_value) / self._range * SLIDER_PRECISION
+
+    def _slider_value_to_value(self, slider_value):
+        return float(slider_value) / SLIDER_PRECISION * self._range + self._min_value
 
     @property
     def label(self):
@@ -42,7 +50,7 @@ class Control:
         return self._value_widget
         
     def set_value(self, value):
-        self._slider.setValue(value / self._max_value * SLIDER_PRECISION)
+        self._slider.setValue(self._value_to_slider_value(value))
 
     def set_enabled(self, enabled):
         self._slider.setEnabled(enabled)

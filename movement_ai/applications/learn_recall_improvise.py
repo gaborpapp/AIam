@@ -48,7 +48,6 @@ from bvh.bvh_reader import BvhReader
 from dimensionality_reduction.behavior import Behavior
 from dimensionality_reduction.behaviors.improvise import ImproviseParameters, Improvise
 from dimensionality_reduction.factory import DimensionalityReductionFactory
-from ui.parameters_form import ParametersForm
 import storage
 from chaining import Chainer
 from stopwatch import Stopwatch
@@ -126,8 +125,10 @@ class UiWindow(BaseUiWindow):
         self._add_confinement_control()
         self._add_confinement_rate_control()
         self._add_max_angular_step_control()
-        self._add_improvise_parameters_form()
-        self._add_noise_control()
+        self._add_novelty_control()
+        self._add_extension_control()
+        self._add_velocity_control()
+        self._add_factor_control()
         self._add_input_only_control()
         master_behavior.on_recall_amount_changed = self._update_recall_amount_control
         memory.on_frames_changed = self._update_memory_size_label
@@ -184,8 +185,8 @@ class UiWindow(BaseUiWindow):
         
     def _add_learning_rate_control(self):
         self._control_layout.add_slider_row(
-            "Learning rate", MAX_LEARNING_RATE, args.learning_rate,
-            students["autoencoder"].set_learning_rate)
+            label="Learning rate", min_value=0, max_value=MAX_LEARNING_RATE, default_value=args.learning_rate,
+            on_changed_value=students["autoencoder"].set_learning_rate)
         
     def _add_memorize_control(self):
         def on_changed_state(checkbox):
@@ -199,8 +200,8 @@ class UiWindow(BaseUiWindow):
 
     def _add_recall_amount_control(self):
         self._recall_amount_control = self._control_layout.add_slider_row(
-            "Recall amount", 1., args.recall_amount,
-            master_behavior.set_recall_amount)
+            label="Recall amount", min_value=0, max_value=1., default_value=args.recall_amount,
+            on_changed_value=master_behavior.set_recall_amount)
         
     def _update_recall_amount_control(self):
         self._recall_amount_control.set_value(master_behavior.get_recall_amount())
@@ -217,19 +218,21 @@ class UiWindow(BaseUiWindow):
 
     def _add_recall_recency_size_control(self):
         self._control_layout.add_slider_row(
-            "Recency size (s)", MAX_RECALL_RECENCY_SIZE, args.recall_recency_size,
-            recall_behavior.set_recall_recency_size,
+            label="Recency size (s)", min_value=0, max_value=MAX_RECALL_RECENCY_SIZE,
+            default_value=args.recall_recency_size,
+            on_changed_value=recall_behavior.set_recall_recency_size,
             label_precision=1)
 
     def _add_recall_recency_bias_control(self):
         self._control_layout.add_slider_row(
-            "Recency bias", 1., args.recall_recency_bias,
-            recall_behavior.set_recall_recency_bias,
+            label="Recency bias", min_value=0, max_value=1., default_value=args.recall_recency_bias,
+            on_changed_value=recall_behavior.set_recall_recency_bias,
             label_precision=1)
         
     def _add_max_angular_step_control(self):
         self._control_layout.add_slider_row(
-            "Max angular step", 1., args.max_angular_step, set_max_angular_step)
+            label="Max angular step", min_value=0, max_value=1., default_value=args.max_angular_step,
+            on_changed_value=set_max_angular_step)
         
     def _add_model_control(self):
         def create_combobox():
@@ -282,14 +285,28 @@ class UiWindow(BaseUiWindow):
         
     def _add_confinement_rate_control(self):
         self._control_layout.add_slider_row(
-            "Confinement rate", .1, args.confinement_rate, master_entity.set_confinement_rate)
+            label="Confinement rate", min_value=0, max_value=.1, default_value=args.confinement_rate,
+            on_changed_value=master_entity.set_confinement_rate)
 
-    def _add_improvise_parameters_form(self):
-        parameters_form = ParametersForm(improvise_params, control_layout=self._control_layout)
-        
-    def _add_noise_control(self):
+    def _add_novelty_control(self):
         self._control_layout.add_slider_row(
-            "Noise amount", .01, 0., master_behavior.set_noise_amount)
+            label="Novelty", min_value=0, max_value=1, default_value=args.novelty,
+            on_changed_value=improvise_params.get_parameter("novelty").set_value)
+
+    def _add_extension_control(self):
+        self._control_layout.add_slider_row(
+            label="Extension", min_value=0, max_value=2, default_value=args.extension,
+            on_changed_value=improvise_params.get_parameter("extension").set_value)
+
+    def _add_velocity_control(self):
+        self._control_layout.add_slider_row(
+            label="Velocity", min_value=0, max_value=5, default_value=args.velocity,
+            on_changed_value=improvise_params.get_parameter("velocity").set_value)
+
+    def _add_factor_control(self):
+        self._control_layout.add_slider_row(
+            label="Factor", min_value=1, max_value=10, default_value=args.factor,
+            on_changed_value=improvise_params.get_parameter("factor").set_value)
 
     def _add_input_only_control(self):
         def on_changed_state(checkbox):
