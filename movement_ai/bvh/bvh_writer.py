@@ -2,23 +2,23 @@ class BvhWriter:
     def __init__(self, hierarchy, frame_time):
         self._root_joint_definition = hierarchy.get_root_joint_definition()
         self._frame_time = frame_time
-        self._frame_data = ""
-        self._num_frames = 0
+        self._frames = []
 
     def add_pose_as_frame(self, pose):
         frame = self._pose_to_bvh_frame(pose)
         self.add_frame(frame)
 
     def add_frame(self, frame):
-        self._add_frame_data(frame)
+        self._frames.append(frame)
 
     def write(self, output_path):
         self._output = open(output_path, "w")
         self._write_header()
         self._write("MOTION\n")
-        self._write("Frames: %d\n" % self._num_frames)
+        self._write("Frames: %d\n" % len(self._frames))
         self._write("Frame Time: %f\n" % self._frame_time)
-        self._write(self._frame_data)
+        for frame in self._frames:
+            self._write_frame(frame)
         self._output.close()
 
     def _write_header(self):
@@ -63,11 +63,10 @@ class BvhWriter:
     def _write_indent(self):
         self._write("\t" * self._indent)
 
-    def _add_frame_data(self, frame):
-        self._num_frames += 1
+    def _write_frame(self, frame):
         for value in frame:
-            self._frame_data += "%s " % value
-        self._frame_data += "\n"
+            self._write("%s " % value)
+        self._write("\n")
 
     def _write(self, string):
         self._output.write(string)
