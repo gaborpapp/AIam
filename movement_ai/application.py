@@ -10,6 +10,7 @@ from entities.hierarchical import Entity
 import tracking.pn.receiver
 from fps_meter import FpsMeter
 from ui.control_layout import ControlLayout
+from bvh.bvh_writer import BvhWriter
 
 FpsMeter.print_fps = False
 
@@ -62,13 +63,14 @@ class Application:
                     self.args.output_receiver_port, self.args.output_receiver_host)
         else:
             self._output_sender = None
-            
+
         self._training_data = collections.deque([], maxlen=self.args.memory_size)
         self._input = None
         self._desired_frame_duration = 1.0 / self.args.frame_rate
         self._frame_count = 0
         self._previous_frame_time = None
         self._fps_meter = FpsMeter("output")
+        self._is_recording = False
 
     def try_connect_to_pn(self):
         if self._create_entity is None:
@@ -160,6 +162,8 @@ class Application:
             if output is not None:
                 if self._output_sender is not None:
                     self._send_output_and_handle_sender_status(avatar, output)
+                if self._is_recording:
+                    self._add_to_bvh(avatar, output)
 
         self._previous_frame_time = now
         self._frame_count += 1
@@ -181,6 +185,10 @@ class Application:
     def on_output_sender_status_changed(self):
         pass
 
+    def _add_to_bvh(self, avatar, output):
+        avatar.entity.parameters_to_processed_pose(output, avatar.entity.pose)
+        self._bvh_writer.add_pose_as_frame(avatar.entity.pose)
+        
     def _wait_until_next_frame_is_timely(self):
         frame_duration = time.time() - self._frame_start_time
         if frame_duration < self._desired_frame_duration:
@@ -198,6 +206,19 @@ class Application:
     def print_and_log(self, message):
         print message
         self._logger.info(message)
+
+    def start_recording(self):
+        self._recording_path = "recordings/%s.bvh" % time.strftime("%Y_%d_%m_%H%M%S")
+        print "Recording to %s" % self._recording_path
+        self._bvh_writer = BvhWriter(
+            self._avatars[0].entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
+        self._is_recording = True
+
+    def stop_recording(self):
+        print "Writing %s ..." % self._recording_path
+        self._bvh_writer.write(self._recording_path)
+        print "OK"
+        self._is_recording = False
         
 class Memory:
     def __init__(self):
@@ -386,6 +407,8 @@ class BaseUiWindow(QtGui.QWidget):
             self._add_connect_to_pn_action()
         self._add_reset_model_action()
         self._add_reset_output_sender_action()
+        self._add_start_recording_action()
+        self._add_stop_recording_action()
         self._add_quit_action()
 
     def _add_connect_to_pn_action(self):
@@ -407,6 +430,27 @@ class BaseUiWindow(QtGui.QWidget):
         action = QtGui.QAction("&Quit", self)
         action.triggered.connect(QtGui.QApplication.exit)
         self._main_menu.addAction(action)
+
+    def _add_start_recording_action(self):
+        def start_recording():
+            self._start_recording_action.setEnabled(False)
+            self._stop_recording_action.setEnabled(True)
+            self._application.start_recording()
+            
+        self._start_recording_action = QtGui.QAction("Start &recording", self)
+        self._start_recording_action.triggered.connect(start_recording)
+        self._main_menu.addAction(self._start_recording_action)
+
+    def _add_stop_recording_action(self):
+        def stop_recording():
+            self._start_recording_action.setEnabled(True)
+            self._stop_recording_action.setEnabled(False)
+            self._application.stop_recording()
+            
+        self._stop_recording_action = QtGui.QAction("Stop &recording", self)
+        self._stop_recording_action.triggered.connect(stop_recording)
+        self._stop_recording_action.setEnabled(False)
+        self._main_menu.addAction(self._stop_recording_action)
         
 def set_up_logging():
     logging.basicConfig(
@@ -414,4 +458,3 @@ def set_up_logging():
         level=logging.DEBUG,
         filename="logs/application.log",
         filemode="w")
-
