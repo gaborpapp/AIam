@@ -31,7 +31,7 @@ FLOOR = True
 MAX_NOVELTY = 4#1.4
 MAX_LEARNING_RATE = 0.01
 MAX_RECALL_RECENCY_SIZE = 60
-CONFINEMENT_RANGE = 1000
+CONFINEMENT_RANGE = 300
 
 from argparse import ArgumentParser
 import numpy
