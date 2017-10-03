@@ -187,7 +187,9 @@ class Application:
 
     def _add_to_bvh(self, avatar, output):
         avatar.entity.parameters_to_processed_pose(output, avatar.entity.pose)
+        self._logger.debug("_add_to_bvh with index %s" % self._recording_frame_index)
         self._bvh_writer.add_pose_as_frame(avatar.entity.pose)
+        self._recording_frame_index += 1
         
     def _wait_until_next_frame_is_timely(self):
         frame_duration = time.time() - self._frame_start_time
@@ -208,13 +210,18 @@ class Application:
         self._logger.info(message)
 
     def start_recording(self):
+        self._logger.debug("start_recording()")
         self._recording_path = "recordings/%s.bvh" % time.strftime("%Y_%d_%m_%H%M%S")
+        self._logger.debug("recording path: %s" % self._recording_path)
         print "Recording to %s" % self._recording_path
         self._bvh_writer = BvhWriter(
             self._avatars[0].entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
+        self._recording_frame_index = 0
         self._is_recording = True
 
     def stop_recording(self):
+        self._logger.debug("stop_recording()")
+        self._logger.debug("recording path: %s" % self._recording_path)
         print "Writing %s ..." % self._recording_path
         self._bvh_writer.write(self._recording_path)
         print "OK"
