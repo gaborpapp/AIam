@@ -2,7 +2,7 @@ from PyQt4 import QtGui, QtCore
 
 SLIDER_PRECISION = 1000
 
-class Control:
+class SliderControl:
     def __init__(self, label, min_value, max_value, default_value, on_changed_value, label_precision=4):
         self._label = label
         self._min_value = float(min_value)
@@ -58,7 +58,33 @@ class Control:
 
     def set_enabled(self, enabled):
         self._slider.setEnabled(enabled)
+
+class CheckboxControl:
+    def __init__(self, label, default_value, on_changed_value):
+        self._label = label
+        self._on_changed_value = on_changed_value
+        self._checkbox = QtGui.QCheckBox()
+        self._checkbox.setChecked(default_value)
+        self._checkbox.stateChanged.connect(lambda: self._state_changed())
+
+    @property
+    def label(self):
+        return self._label
         
+    @property
+    def checkbox(self):
+        return self._checkbox
+
+    def _state_changed(self):
+        self._on_changed_value(self._checkbox.isChecked())
+
+    def set_value(self, value):
+        self._checkbox.setChecked(value)
+
+    @property
+    def value(self):
+        return self._checkbox.isChecked()
+    
 class ControlLayout:
     def __init__(self):
         self._layout = QtGui.QGridLayout()
@@ -87,7 +113,14 @@ class ControlLayout:
         self._row += 1
 
     def add_slider_row(self, *args, **kwargs):
-        control = Control(*args, **kwargs)
+        control = SliderControl(*args, **kwargs)
         self.add_label(control.label)
         self.add_control_widgets([control.slider, control.value_widget])
         return control
+
+    def add_checkbox_row(self, *args, **kwargs):
+        control = CheckboxControl(*args, **kwargs)
+        self.add_label(control.label)
+        self.add_control_widget(control.checkbox)
+        return control
+    

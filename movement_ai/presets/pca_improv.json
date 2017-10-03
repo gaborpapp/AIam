@@ -1,0 +1,1 @@
+{"recall_amount": 0.0, "memorize": true, "learning_rate": 0.00118, "recall_recency_size": 4.98, "recall_recency_bias": 1.0, "input_only": false, "max_angular_step": 0.15, "model": "pca"}

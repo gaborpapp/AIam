@@ -23,6 +23,14 @@ MODELS_INFO = {
         }
     }
 
+PRESETS = [
+    "alien_egg",
+    "greeting",
+    "recall",
+    "recall_and_autoencoder_improv",
+    "pca_improv",
+    ]
+
 ENTITY_ARGS = "-r quaternion --friction --translate --confinement"
 SKELETON_DEFINITION = "scenes/pn-01.22_z_up_xyz_skeleton.bvh"
 NUM_REDUCED_DIMENSIONS = 7
@@ -52,6 +60,7 @@ from dimensionality_reduction.factory import DimensionalityReductionFactory
 import storage
 from chaining import Chainer
 from stopwatch import Stopwatch
+from preset_manager import PresetManager
 
 parser = ArgumentParser()
 parser.add_argument("--model", choices=MODELS, default="pca")
@@ -111,8 +120,12 @@ def set_max_angular_step(max_angular_step):
 class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
         super(UiWindow, self).__init__(application, master_behavior)
+        self._current_preset = None
+        self._preset_manager = PresetManager()
+        self._add_save_preset_action()
         self._add_reset_translation_action()
         self._create_memory_menu()
+        self._add_preset_control()
         self._add_learning_rate_control()
         self._add_memory_size_label()
         self._add_memorize_control()
@@ -136,6 +149,29 @@ class UiWindow(BaseUiWindow):
         memory.on_frames_changed = self._update_memory_size_label
         memory.on_frames_changed()
 
+    def _set_preset(self, preset_name):
+        path = self._preset_path(preset_name)
+        try:
+            self._preset_manager.load(path)
+        except IOError as exception:
+            print "WARNING: Failed to load preset from %s: %s" % (path, exception)
+        self._current_preset = preset_name
+
+    def _preset_path(self, preset_name):
+        return "presets/%s.json" % preset_name
+    
+    def _add_save_preset_action(self):
+        def save_preset():
+            if self._current_preset is None:
+                return
+            path = self._preset_path(self._current_preset)
+            self._preset_manager.save(path)
+            
+        action = QtGui.QAction("Save preset", self)
+        action.setShortcut("Ctrl+s")
+        action.triggered.connect(save_preset)
+        self._main_menu.addAction(action)
+        
     def _add_reset_translation_action(self):
         action = QtGui.QAction("Reset translation", self)
         action.triggered.connect(master_behavior.reset_translation)
@@ -185,25 +221,50 @@ class UiWindow(BaseUiWindow):
     def _update_memory_size_label(self):
         self._memory_size_label.setText("%d" % memory.get_num_frames())
         
+    def _add_preset_control(self):
+        def create_combobox():
+            combobox = QtGui.QComboBox()
+            combobox.addItem("")
+            for preset_name in PRESETS:
+                combobox.addItem(preset_name)
+            combobox.activated.connect(on_activated)
+            return combobox
+
+        def on_activated(value):
+            if value == 0:
+                return
+            preset_name = PRESETS[value-1]
+            self._set_preset(preset_name)
+            
+        self._control_layout.add_label("Preset")
+        self._control_layout.add_control_widget(create_combobox())
+        
     def _add_learning_rate_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Learning rate", min_value=0, max_value=MAX_LEARNING_RATE, default_value=args.learning_rate,
             on_changed_value=students["autoencoder"].set_learning_rate)
+        self._add_control_to_preset_manager("learning_rate", control)
+
+    def _add_control_to_preset_manager(self, name, control):
+        def get_value():
+            return control.value
+            
+        self._preset_manager.add_parameter(name, get_value, control.set_value)
         
     def _add_memorize_control(self):
-        def on_changed_state(checkbox):
-            master_behavior.memorize = checkbox.isChecked()
-            
-        self._control_layout.add_label("Memorize")
-        checkbox = QtGui.QCheckBox()
-        checkbox.setChecked(args.memorize)
-        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
-        self._control_layout.add_control_widget(checkbox)
+        def on_changed_value(value):
+            master_behavior.memorize = value
+
+        control = self._control_layout.add_checkbox_row(
+            label="Memorize", default_value=args.memorize,
+            on_changed_value=on_changed_value)
+        self._add_control_to_preset_manager("memorize", control)
 
     def _add_recall_amount_control(self):
         self._recall_amount_control = self._control_layout.add_slider_row(
             label="Recall amount", min_value=0, max_value=1., default_value=args.recall_amount,
             on_changed_value=master_behavior.set_recall_amount)
+        self._add_control_to_preset_manager("recall_amount", self._recall_amount_control)
         
     def _update_recall_amount_control(self):
         self._recall_amount_control.set_value(master_behavior.get_recall_amount())
@@ -219,22 +280,25 @@ class UiWindow(BaseUiWindow):
         self._control_layout.add_control_widget(checkbox)        
 
     def _add_recall_recency_size_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Recency size (s)", min_value=0, max_value=MAX_RECALL_RECENCY_SIZE,
             default_value=args.recall_recency_size,
             on_changed_value=recall_behavior.set_recall_recency_size,
             label_precision=1)
+        self._add_control_to_preset_manager("recall_recency_size", control)
 
     def _add_recall_recency_bias_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Recency bias", min_value=0, max_value=1., default_value=args.recall_recency_bias,
             on_changed_value=recall_behavior.set_recall_recency_bias,
             label_precision=1)
+        self._add_control_to_preset_manager("recall_recency_bias", control)
         
     def _add_max_angular_step_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Max angular step", min_value=0, max_value=1., default_value=args.max_angular_step,
             on_changed_value=set_max_angular_step)
+        self._add_control_to_preset_manager("max_angular_step", control)
         
     def _add_model_control(self):
         def create_combobox():
@@ -245,11 +309,23 @@ class UiWindow(BaseUiWindow):
             combobox.setCurrentIndex(combobox.findText(args.model))
             return combobox
 
-        def on_activated(value):
-            set_model(MODELS[value])
+        def on_activated(index):
+            set_model(MODELS[index])
 
+        combobox = create_combobox()
         self._control_layout.add_label("Model")
-        self._control_layout.add_control_widget(create_combobox())
+        self._control_layout.add_control_widget(combobox)
+
+        def get_value():
+            model_name = MODELS[combobox.currentIndex()]
+            return model_name
+
+        def set_value(model_name):
+            combobox.setCurrentIndex(combobox.findText(model_name))
+            index = combobox.currentIndex()
+            set_model(MODELS[index])
+
+        self._preset_manager.add_parameter("model", get_value, set_value)
         
     def _add_auto_friction_control(self):
         def on_changed_state(checkbox):
@@ -328,13 +404,13 @@ class UiWindow(BaseUiWindow):
             on_changed_value=improvise_params.get_parameter("factor").set_value)
 
     def _add_input_only_control(self):
-        def on_changed_state(checkbox):
-            master_behavior.input_only = checkbox.isChecked()
+        def on_changed_value(value):
+            master_behavior.input_only = value
 
-        self._control_layout.add_label("Input only")
-        checkbox = QtGui.QCheckBox()
-        checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
-        self._control_layout.add_control_widget(checkbox)
+        control = self._control_layout.add_checkbox_row(
+            label="Input only", default_value=False,
+            on_changed_value=on_changed_value)
+        self._add_control_to_preset_manager("input_only", control)        
 
     def sizeHint(self):
         return QtCore.QSize(500, 0)        
