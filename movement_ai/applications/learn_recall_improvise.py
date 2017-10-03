@@ -13,13 +13,13 @@ MODELS_INFO = {
         # "dimensionality_reduction_type": "KernelPCA",
         # "dimensionality_reduction_args": "",
         
-        # "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_z_up.model",
-        # "dimensionality_reduction_type": "KernelPCA",
-        # "dimensionality_reduction_args": "",
-        
-        "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_25_z_up.model",
+        "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_z_up.model",
         "dimensionality_reduction_type": "KernelPCA",
         "dimensionality_reduction_args": "",
+        
+        # "path": "profiles/dimensionality_reduction/valencia_pn_2017_09_25_z_up.model",
+        # "dimensionality_reduction_type": "KernelPCA",
+        # "dimensionality_reduction_args": "",
         }
     }
 
