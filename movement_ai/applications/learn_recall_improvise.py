@@ -384,24 +384,28 @@ class UiWindow(BaseUiWindow):
         master_entity.set_confinement_target_position(target_position)
         
     def _add_novelty_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Novelty", min_value=0, max_value=1, default_value=args.novelty,
             on_changed_value=improvise_params.get_parameter("novelty").set_value)
+        self._add_control_to_preset_manager("novelty", control)
 
     def _add_extension_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Extension", min_value=0, max_value=2, default_value=args.extension,
             on_changed_value=improvise_params.get_parameter("extension").set_value)
+        self._add_control_to_preset_manager("extension", control)
 
     def _add_velocity_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Velocity", min_value=0, max_value=5, default_value=args.velocity,
             on_changed_value=improvise_params.get_parameter("velocity").set_value)
+        self._add_control_to_preset_manager("velocity", control)
 
     def _add_factor_control(self):
-        self._control_layout.add_slider_row(
+        control = self._control_layout.add_slider_row(
             label="Factor", min_value=1, max_value=10, default_value=args.factor,
             on_changed_value=improvise_params.get_parameter("factor").set_value)
+        self._add_control_to_preset_manager("factor", control)
 
     def _add_input_only_control(self):
         def on_changed_value(value):

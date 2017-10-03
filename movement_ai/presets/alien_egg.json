@@ -1,1 +1,1 @@
-{"recall_amount": 0.0, "memorize": false, "learning_rate": 0.00118, "recall_recency_size": 4.98, "recall_recency_bias": 1.0, "input_only": true, "max_angular_step": 0.15, "model": "autoencoder"}
+{"recall_amount": 0.0, "extension": 0.5, "memorize": false, "novelty": 0.2, "learning_rate": 0.00118, "recall_recency_size": 4.98, "recall_recency_bias": 1.0, "input_only": true, "max_angular_step": 0.15, "factor": 1.0, "velocity": 0.5, "model": "autoencoder"}
