@@ -5,8 +5,8 @@ SLIDER_PRECISION = 1000
 class Control:
     def __init__(self, label, min_value, max_value, default_value, on_changed_value, label_precision=4):
         self._label = label
-        self._min_value = min_value
-        self._max_value = max_value
+        self._min_value = float(min_value)
+        self._max_value = float(max_value)
         self._range = max_value - min_value
         self._value_widget = QtGui.QLabel()
         self._value_widget.setFixedWidth(60)
@@ -45,6 +45,10 @@ class Control:
     def slider(self):
         return self._slider
 
+    @property
+    def value(self):
+        return self._slider_value_to_value(self._slider.value())
+    
     @property
     def value_widget(self):
         return self._value_widget

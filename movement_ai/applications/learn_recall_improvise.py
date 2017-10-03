@@ -31,6 +31,7 @@ FLOOR = True
 MAX_NOVELTY = 4#1.4
 MAX_LEARNING_RATE = 0.01
 MAX_RECALL_RECENCY_SIZE = 60
+CONFINEMENT_RANGE = 1000
 
 from argparse import ArgumentParser
 import numpy
@@ -124,6 +125,7 @@ class UiWindow(BaseUiWindow):
         self._add_friction_control()
         self._add_confinement_control()
         self._add_confinement_rate_control()
+        self._add_confinement_position_controls()
         self._add_max_angular_step_control()
         self._add_novelty_control()
         self._add_extension_control()
@@ -288,6 +290,23 @@ class UiWindow(BaseUiWindow):
             label="Confinement rate", min_value=0, max_value=.1, default_value=args.confinement_rate,
             on_changed_value=master_entity.set_confinement_rate)
 
+    def _add_confinement_position_controls(self):
+        self._confinement_x_control = self._control_layout.add_slider_row(
+            label="Confinement X", min_value=-CONFINEMENT_RANGE, max_value=CONFINEMENT_RANGE, default_value=0,
+            on_changed_value=lambda value: self._set_confinement_target_position())
+        
+        self._confinement_y_control = self._control_layout.add_slider_row(
+            label="Confinement Y", min_value=-CONFINEMENT_RANGE, max_value=CONFINEMENT_RANGE, default_value=0,
+            on_changed_value=lambda value: self._set_confinement_target_position())
+
+    def _set_confinement_target_position(self):
+        target_position = numpy.array([
+            self._confinement_x_control.value,
+            self._confinement_y_control.value,
+            0,
+            0])
+        master_entity.set_confinement_target_position(target_position)
+        
     def _add_novelty_control(self):
         self._control_layout.add_slider_row(
             label="Novelty", min_value=0, max_value=1, default_value=args.novelty,

@@ -58,12 +58,15 @@ class FloorConstrainer:
         return [vertex + offset for vertex in vertices]
 
 class Confinement:
-    def __init__(self, coordinate_up=1, update_rate=None):
+    def __init__(self, coordinate_up=1, update_rate=None, target_position=None):
         self._coordinate_up = coordinate_up
-        self._target_position = numpy.zeros(3)
+        self._target_position = target_position
         self._update_rate = update_rate
         self.enabled = True
         self.reset()
+
+    def set_target_position(self, target_position):
+        self._target_position = target_position
 
     def set_update_rate(self, rate):
         self._update_rate = rate
@@ -79,7 +82,9 @@ class Confinement:
         return result
 
     def _update_translation(self, vertices):
-        desired_translation = -vertices[0]
+        if self._target_position is None:
+            self._target_position = numpy.zeros(len(vertices[0]))
+        desired_translation = self._target_position - vertices[0]
         desired_translation[self._coordinate_up] = 0
         if self._translation is None:
             self._translation = desired_translation
@@ -154,4 +159,7 @@ class Constrainers:
 
     def set_confinement_rate(self, rate):
         self._confinement.set_update_rate(rate)
+
+    def set_confinement_target_position(self, target_position):
+        self._confinement.set_target_position(target_position)
         

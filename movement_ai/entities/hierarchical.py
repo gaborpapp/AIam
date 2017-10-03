@@ -471,6 +471,10 @@ class Entity(BaseEntity):
     def set_confinement_rate(self, rate):
         self._normalized_constrainers.set_confinement_rate(rate)
         self._unnormalized_constrainers.set_confinement_rate(rate)
+
+    def set_confinement_target_position(self, target_position):
+        self._normalized_constrainers.set_confinement_target_position(target_position)
+        self._unnormalized_constrainers.set_confinement_target_position(target_position)
         
     def set_max_angular_step(self, max_angular_step):
         self._max_angular_step = max_angular_step
