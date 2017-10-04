@@ -184,10 +184,6 @@ class UiWindow(BaseUiWindow):
         self._add_save_memory_action()
 
     def _add_clear_memory_action(self):
-        def clear_memory():
-            recall_behavior.reset()
-            memory.clear()
-            
         action = QtGui.QAction("Clear memory", self)
         action.triggered.connect(clear_memory)
         self._memory_menu.addAction(action)
@@ -253,6 +249,8 @@ class UiWindow(BaseUiWindow):
         
     def _add_memorize_control(self):
         def on_changed_value(value):
+            if value == True:
+                clear_memory()
             master_behavior.memorize = value
 
         control = self._control_layout.add_checkbox_row(
@@ -720,6 +718,10 @@ recall_behavior = RecallBehavior()
 master_behavior = MasterBehavior() 
 avatar = Avatar(index, master_entity, master_behavior)
 
+def clear_memory():
+    recall_behavior.reset()
+    memory.clear()
+            
 avatars = [avatar]
 
 application = Application(
