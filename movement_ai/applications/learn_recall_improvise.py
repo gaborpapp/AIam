@@ -75,6 +75,7 @@ parser.add_argument("--memorize", action="store_true")
 parser.add_argument("--auto-friction", action="store_true")
 parser.add_argument("--verbose", action="store_true")
 parser.add_argument("--memory")
+parser.add_argument("--preset", choices=PRESETS)
 Application.add_parser_arguments(parser)
 ImproviseParameters().add_parser_arguments(parser)
 args = parser.parse_args()
@@ -149,7 +150,7 @@ class UiWindow(BaseUiWindow):
         memory.on_frames_changed = self._update_memory_size_label
         memory.on_frames_changed()
 
-    def _set_preset(self, preset_name):
+    def set_preset(self, preset_name):
         path = self._preset_path(preset_name)
         try:
             self._preset_manager.load(path)
@@ -224,13 +225,15 @@ class UiWindow(BaseUiWindow):
             for preset_name in PRESETS:
                 combobox.addItem(preset_name)
             combobox.activated.connect(on_activated)
+            if args.preset:
+                combobox.setCurrentIndex(combobox.findText(args.preset))
             return combobox
 
         def on_activated(value):
             if value == 0:
                 return
             preset_name = PRESETS[value-1]
-            self._set_preset(preset_name)
+            self.set_preset(preset_name)
             
         self._control_layout.add_label("Preset")
         self._control_layout.add_control_widget(create_combobox())
@@ -729,13 +732,17 @@ application = Application(
 
 set_model(args.model)
 set_max_angular_step(args.max_angular_step)
-
+    
 if args.with_ui:
     qt_app = QtGui.QApplication(sys.argv)
     ui_window = UiWindow(master_behavior)
     ui_window.show()
     application.initialize()
+    if args.preset:
+        ui_window.set_preset(args.preset)
     qt_app.exec_()
 else:
+    if args.preset:
+        raise Exception("--preset requires --with-ui")
     application.initialize()
     application.main_loop()
