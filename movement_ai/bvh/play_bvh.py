@@ -20,9 +20,11 @@ CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
 FRAME_RATE = 50
+SLIDER_PRECISION = 1000
 
 class MainWindow(Window):
     def __init__(self, bvh_reader, args):
+        global transport_layout
         Window.__init__(self, args)
         self._main_layout = QtGui.QVBoxLayout()
         self._main_layout.setSpacing(0)
@@ -30,8 +32,8 @@ class MainWindow(Window):
         self._main_layout.setContentsMargins(0, 0, 0, 0)
         self._scene = Scene(bvh_reader, args)
         self._main_layout.addWidget(self._scene)
-        control_layout = ControlLayout()
-        self._main_layout.addLayout(control_layout)
+        transport_layout = TransportLayout()
+        self._main_layout.addLayout(transport_layout)
         self._create_menu()
         self.setLayout(self._main_layout)
 
@@ -59,12 +61,30 @@ class MainWindow(Window):
         self._scene.keyPressEvent(event)
         QtGui.QWidget.keyPressEvent(self, event)
 
-class ControlLayout(QtGui.QHBoxLayout):
+class TransportLayout(QtGui.QHBoxLayout):
     def __init__(self):
         QtGui.QHBoxLayout.__init__(self)
+        self._add_cursor_slider()
         self._add_play_button()
         self._add_stop_button()
 
+    def _add_cursor_slider(self):
+        def create_slider():
+            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(0, SLIDER_PRECISION)
+            slider.setSingleStep(1)
+            slider.valueChanged.connect(on_changed_slider_value)
+            return slider
+
+        def on_changed_slider_value(slider_value):
+            transport.set_cursor(float(slider_value) / SLIDER_PRECISION * bvh_reader.get_duration())
+            
+        self._cursor_slider = create_slider()
+        self.addWidget(self._cursor_slider)
+
+    def set_cursor_value(self, cursor):
+        self._cursor_slider.setValue(cursor / bvh_reader.get_duration() * SLIDER_PRECISION)
+        
     def _add_play_button(self):
         button = QtGui.QPushButton(text="Play")
         button.clicked.connect(transport.play)
@@ -186,13 +206,13 @@ class Scene(QtOpenGL.QGLWidget):
         glTranslatef(*self._camera_position)
 
     def render(self):
-        if not self.width:
-            return
         self.configure_3d_projection(-100, 0)
         if args.unit_cube:
             self._draw_unit_cube()
         self._draw_skeleton()
         transport.update()
+        if transport.is_playing:
+            transport_layout.set_cursor_value(transport.cursor)
 
     def _draw_skeleton(self):
         self.bvh_reader.set_pose_from_time(self._pose, transport.cursor)
@@ -261,33 +281,40 @@ class Transport:
     def __init__(self, duration):
         self._duration = duration
         self._cursor = 0
-        self._playing = False
+        self._is_playing = False
 
     @property
     def cursor(self):
         return self._cursor
+
+    @property
+    def is_playing(self):
+        return self._is_playing
     
     def rewind(self):
         self._cursor = 0
 
     def play(self):
-        self._playing = True
+        self._is_playing = True
         self._previous_time = time.time()
 
     def stop(self):
-        self._playing = False
+        self._is_playing = False
 
     def update(self):
         now = time.time()
-        if self._playing:
+        if self._is_playing:
             self._cursor += now - self._previous_time
-            if self._cursor > self._duration:
+            if self._cursor >= self._duration:
                 if args.loop:
                     self.rewind()
                 else:
-                    self._cursor = self._duration
+                    self._cursor = self._duration - 0.001
                     self.stop()
         self._previous_time = now
+
+    def set_cursor(self, value):
+        self._cursor = min(value, self._duration - 0.001)
 
 parser = ArgumentParser()
 Window.add_parser_arguments(parser)
