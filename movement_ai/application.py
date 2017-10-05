@@ -292,9 +292,12 @@ class Memory:
                 recency_num_frames = self.get_num_frames()
             if recency_num_frames < num_frames_to_recall:
                 recency_num_frames = num_frames_to_recall
-    
+
         min_cursor = self.get_num_frames() - recency_num_frames
         max_cursor = self.get_num_frames() - num_frames_to_recall
+        self._logger.debug("recency_num_frames=%s" % recency_num_frames)
+        self._logger.debug("min_cursor=%s" % min_cursor)
+        self._logger.debug("max_cursor=%s" % max_cursor)
         cursor = random.randint(min_cursor, max_cursor)
         time_direction = 1
         self._logger.debug("normal recall from %s" % cursor)

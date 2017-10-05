@@ -633,10 +633,9 @@ class RecallBehavior(Behavior):
         
         frames_to_process = min(self._remaining_frames_to_process, remaining_frames_in_state)
         self._logger.debug("frames_to_process=%s" % frames_to_process)
-        self._current_recall.proceed(frames_to_process)
-
         output = self._pass_through_interpolation_to_update_its_state(
             self._current_recall.get_output())
+        self._current_recall.proceed(frames_to_process)
         
         translation = get_translation(output)
         orientations = get_orientations(output)
@@ -660,11 +659,10 @@ class RecallBehavior(Behavior):
                 
         frames_to_process = min(self._remaining_frames_to_process, remaining_frames_in_state)
         self._logger.debug("frames_to_process=%s" % frames_to_process)
-        self._current_recall.proceed(frames_to_process)
-        self._next_recall.proceed(frames_to_process)
-        
         from_output = self._current_recall.get_output()
         to_output = self._next_recall.get_output()
+        self._current_recall.proceed(frames_to_process)
+        self._next_recall.proceed(frames_to_process)
         relative_cursor = float(self._state_frames) / self._interpolation_num_frames
         amount = 1 - (math.sin((relative_cursor + .5) * math.pi) + 1) / 2
 
