@@ -71,6 +71,7 @@ class Application:
         self._previous_frame_time = None
         self._fps_meter = FpsMeter("output")
         self._is_recording = False
+        self._recorded_outputs = []
 
     def try_connect_to_pn(self):
         if self._create_entity is None:
@@ -186,9 +187,8 @@ class Application:
         pass
 
     def _add_to_bvh(self, avatar, output):
-        avatar.entity.parameters_to_processed_pose(output, avatar.entity.pose)
         self._logger.debug("_add_to_bvh with index %s" % self._recording_frame_index)
-        self._bvh_writer.add_pose_as_frame(avatar.entity.pose)
+        self._recorded_outputs.append(output)
         self._recording_frame_index += 1
         
     def _wait_until_next_frame_is_timely(self):
@@ -217,12 +217,17 @@ class Application:
         self._bvh_writer = BvhWriter(
             self._avatars[0].entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
         self._recording_frame_index = 0
+        self._recorded_outputs = []
         self._is_recording = True
 
     def stop_recording(self):
         self._logger.debug("stop_recording()")
         self._logger.debug("recording path: %s" % self._recording_path)
         print "Writing %s ..." % self._recording_path
+        avatar = self._avatars[0]
+        for output in self._recorded_outputs:
+            avatar.entity.parameters_to_processed_pose(output, avatar.entity.pose)
+            self._bvh_writer.add_pose_as_frame(avatar.entity.pose)
         self._bvh_writer.write(self._recording_path)
         print "OK"
         self._is_recording = False
