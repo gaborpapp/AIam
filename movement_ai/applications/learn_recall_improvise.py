@@ -121,6 +121,7 @@ def set_max_angular_step(max_angular_step):
 class UiWindow(BaseUiWindow):
     def __init__(self, master_behavior):
         super(UiWindow, self).__init__(application, master_behavior)
+        self._logger = logging.getLogger(self.__class__.__name__)
         self._current_preset = None
         self._preset_manager = PresetManager()
         self._add_save_preset_action()
@@ -151,6 +152,7 @@ class UiWindow(BaseUiWindow):
         memory.on_frames_changed()
 
     def set_preset(self, preset_name):
+        self._logger.debug("set_preset(%r)" % preset_name)
         path = self._preset_path(preset_name)
         try:
             self._preset_manager.load(path)
