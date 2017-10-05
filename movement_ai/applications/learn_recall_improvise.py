@@ -211,11 +211,11 @@ class UiWindow(BaseUiWindow):
         action = QtGui.QAction("Load memory", self)
         action.triggered.connect(load_memory)
         self._memory_menu.addAction(action)
-
+        
     def _add_memory_size_label(self):
-        self._control_layout.add_label("Memory size")
+        self._standard_control_layout.add_label("Memory size")
         self._memory_size_label = QtGui.QLabel("")
-        self._control_layout.add_control_widget(self._memory_size_label)
+        self._standard_control_layout.add_control_widget(self._memory_size_label)
 
     def _update_memory_size_label(self):
         self._memory_size_label.setText("%d" % memory.get_num_frames())
@@ -237,11 +237,11 @@ class UiWindow(BaseUiWindow):
             preset_name = PRESETS[value-1]
             self.set_preset(preset_name)
             
-        self._control_layout.add_label("Preset")
-        self._control_layout.add_control_widget(create_combobox())
+        self._standard_control_layout.add_label("Preset")
+        self._standard_control_layout.add_control_widget(create_combobox())
         
     def _add_learning_rate_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._standard_control_layout.add_slider_row(
             label="Learning rate", min_value=0, max_value=MAX_LEARNING_RATE, default_value=args.learning_rate,
             on_changed_value=students["autoencoder"].set_learning_rate)
         self._add_control_to_preset_manager("learning_rate", control)
@@ -258,13 +258,13 @@ class UiWindow(BaseUiWindow):
                 clear_memory()
             master_behavior.memorize = value
 
-        control = self._control_layout.add_checkbox_row(
+        control = self._standard_control_layout.add_checkbox_row(
             label="Memorize", default_value=args.memorize,
             on_changed_value=on_changed_value)
         self._add_control_to_preset_manager("memorize", control)
 
     def _add_recall_amount_control(self):
-        self._recall_amount_control = self._control_layout.add_slider_row(
+        self._recall_amount_control = self._standard_control_layout.add_slider_row(
             label="Recall amount", min_value=0, max_value=1., default_value=args.recall_amount,
             on_changed_value=master_behavior.set_recall_amount)
         self._add_control_to_preset_manager("recall_amount", self._recall_amount_control)
@@ -277,13 +277,13 @@ class UiWindow(BaseUiWindow):
             master_behavior.set_auto_switch_enabled(checkbox.isChecked())
             self._recall_amount_control.set_enabled(not checkbox.isChecked())
 
-        self._control_layout.add_label("Auto switch")
+        self._standard_control_layout.add_label("Auto switch")
         checkbox = QtGui.QCheckBox()
         checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
-        self._control_layout.add_control_widget(checkbox)        
+        self._standard_control_layout.add_control_widget(checkbox)        
 
     def _add_recall_recency_size_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._advanced_control_layout.add_slider_row(
             label="Recency size (s)", min_value=0, max_value=MAX_RECALL_RECENCY_SIZE,
             default_value=args.recall_recency_size,
             on_changed_value=recall_behavior.set_recall_recency_size,
@@ -291,14 +291,14 @@ class UiWindow(BaseUiWindow):
         self._add_control_to_preset_manager("recall_recency_size", control)
 
     def _add_recall_recency_bias_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._advanced_control_layout.add_slider_row(
             label="Recency bias", min_value=0, max_value=1., default_value=args.recall_recency_bias,
             on_changed_value=recall_behavior.set_recall_recency_bias,
             label_precision=1)
         self._add_control_to_preset_manager("recall_recency_bias", control)
         
     def _add_max_angular_step_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._advanced_control_layout.add_slider_row(
             label="Max angular step", min_value=0, max_value=1., default_value=args.max_angular_step,
             on_changed_value=set_max_angular_step)
         self._add_control_to_preset_manager("max_angular_step", control)
@@ -316,8 +316,8 @@ class UiWindow(BaseUiWindow):
             set_model(MODELS[index])
 
         combobox = create_combobox()
-        self._control_layout.add_label("Model")
-        self._control_layout.add_control_widget(combobox)
+        self._standard_control_layout.add_label("Model")
+        self._standard_control_layout.add_control_widget(combobox)
 
         def get_value():
             model_name = MODELS[combobox.currentIndex()]
@@ -335,46 +335,46 @@ class UiWindow(BaseUiWindow):
             master_behavior.auto_friction = checkbox.isChecked()
             self._friction_checkbox.setEnabled(not master_behavior.auto_friction)
 
-        self._control_layout.add_label("Auto friction")
+        self._advanced_control_layout.add_label("Auto friction")
         checkbox = QtGui.QCheckBox()
         checkbox.setChecked(args.auto_friction)
         checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
-        self._control_layout.add_control_widget(checkbox)
+        self._advanced_control_layout.add_control_widget(checkbox)
 
     def _add_friction_control(self):
         def on_changed_state():
             master_entity.set_friction(self._friction_checkbox.isChecked())
 
-        self._control_layout.add_label("Friction")
+        self._advanced_control_layout.add_label("Friction")
         self._friction_checkbox = QtGui.QCheckBox()
         self._friction_checkbox.setEnabled(not args.auto_friction)
         self._friction_checkbox.stateChanged.connect(on_changed_state)
         self._application.on_friction_changed = lambda value: self._friction_checkbox.setChecked(value)
-        self._control_layout.add_control_widget(self._friction_checkbox)
+        self._advanced_control_layout.add_control_widget(self._friction_checkbox)
 
     def _add_confinement_control(self):
         def on_changed_state(checkbox):
             master_entity.set_confinement(checkbox.isChecked())
 
-        self._control_layout.add_label("Confinement")
+        self._advanced_control_layout.add_label("Confinement")
         checkbox = QtGui.QCheckBox()
         checkbox.setEnabled(True)
         checkbox.setChecked(True)
         checkbox.stateChanged.connect(lambda: on_changed_state(checkbox))
         self._application.on_confinement_changed = lambda value: checkbox.setChecked(value)
-        self._control_layout.add_control_widget(checkbox)
+        self._advanced_control_layout.add_control_widget(checkbox)
         
     def _add_confinement_rate_control(self):
-        self._control_layout.add_slider_row(
+        self._advanced_control_layout.add_slider_row(
             label="Confinement rate", min_value=0, max_value=.1, default_value=args.confinement_rate,
             on_changed_value=master_entity.set_confinement_rate)
 
     def _add_confinement_position_controls(self):
-        self._confinement_x_control = self._control_layout.add_slider_row(
+        self._confinement_x_control = self._advanced_control_layout.add_slider_row(
             label="Confinement X", min_value=-CONFINEMENT_RANGE, max_value=CONFINEMENT_RANGE, default_value=0,
             on_changed_value=lambda value: self._set_confinement_target_position())
         
-        self._confinement_y_control = self._control_layout.add_slider_row(
+        self._confinement_y_control = self._advanced_control_layout.add_slider_row(
             label="Confinement Y", min_value=-CONFINEMENT_RANGE, max_value=CONFINEMENT_RANGE, default_value=0,
             on_changed_value=lambda value: self._set_confinement_target_position())
 
@@ -387,25 +387,25 @@ class UiWindow(BaseUiWindow):
         master_entity.set_confinement_target_position(target_position)
         
     def _add_novelty_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._standard_control_layout.add_slider_row(
             label="Novelty", min_value=0, max_value=1, default_value=args.novelty,
             on_changed_value=improvise_params.get_parameter("novelty").set_value)
         self._add_control_to_preset_manager("novelty", control)
 
     def _add_extension_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._standard_control_layout.add_slider_row(
             label="Extension", min_value=0, max_value=2, default_value=args.extension,
             on_changed_value=improvise_params.get_parameter("extension").set_value)
         self._add_control_to_preset_manager("extension", control)
 
     def _add_velocity_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._standard_control_layout.add_slider_row(
             label="Velocity", min_value=0, max_value=5, default_value=args.velocity,
             on_changed_value=improvise_params.get_parameter("velocity").set_value)
         self._add_control_to_preset_manager("velocity", control)
 
     def _add_factor_control(self):
-        control = self._control_layout.add_slider_row(
+        control = self._standard_control_layout.add_slider_row(
             label="Factor", min_value=1, max_value=10, default_value=args.factor,
             on_changed_value=improvise_params.get_parameter("factor").set_value)
         self._add_control_to_preset_manager("factor", control)
@@ -414,7 +414,7 @@ class UiWindow(BaseUiWindow):
         def on_changed_value(value):
             master_behavior.input_only = value
 
-        control = self._control_layout.add_checkbox_row(
+        control = self._standard_control_layout.add_checkbox_row(
             label="Input only", default_value=False,
             on_changed_value=on_changed_value)
         self._add_control_to_preset_manager("input_only", control)        

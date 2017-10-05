@@ -335,8 +335,24 @@ class BaseUiWindow(QtGui.QWidget):
         QtGui.QWidget.__init__(self)
         self._application = application
         self._master_behavior = master_behavior
-        self._control_layout = ControlLayout()
-        self.setLayout(self._control_layout.layout)
+
+        self._main_layout = QtGui.QVBoxLayout()
+        self._main_layout.setSpacing(0)
+        self._main_layout.setMargin(0)
+        self._main_layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(self._main_layout)
+        
+        self._standard_control_layout = ControlLayout()
+        self._standard_control_layout_widget = QtGui.QWidget()
+        self._standard_control_layout_widget.setLayout(self._standard_control_layout.layout)
+        self._main_layout.addWidget(self._standard_control_layout_widget)
+        
+        self._advanced_control_layout = ControlLayout()
+        self._advanced_control_layout_widget = QtGui.QWidget()
+        self._advanced_control_layout_widget.setLayout(self._advanced_control_layout.layout)
+        self._main_layout.addWidget(self._advanced_control_layout_widget)
+        self._advanced_control_layout_widget.setVisible(False)
+        
         if application.receive_from_pn:
             self._add_pn_connection_status()
             self._add_pn_fps_label()
@@ -360,17 +376,17 @@ class BaseUiWindow(QtGui.QWidget):
         self._update_training_data_size_label()
 
     def _add_training_data_size_label(self):
-        self._control_layout.add_label("Training data size")
+        self._standard_control_layout.add_label("Training data size")
         self._training_data_size_label = QtGui.QLabel("")
-        self._control_layout.add_control_widget(self._training_data_size_label)
+        self._standard_control_layout.add_control_widget(self._training_data_size_label)
 
     def _update_training_data_size_label(self):
         self._training_data_size_label.setText("%d" % self._application.training_data_size)
 
     def _add_pn_connection_status(self):
-        self._control_layout.add_label("PN connection")
+        self._standard_control_layout.add_label("PN connection")
         self._pn_connection_status_label = QtGui.QLabel("")
-        self._control_layout.add_control_widget(self._pn_connection_status_label)
+        self._standard_control_layout.add_control_widget(self._pn_connection_status_label)
 
     def _update_pn_connection_status_label(self, status):
         if status == True:
@@ -381,18 +397,18 @@ class BaseUiWindow(QtGui.QWidget):
             self._pn_connection_status_label.setStyleSheet("QLabel { background-color : red; }")
 
     def _add_pn_fps_label(self):
-        self._control_layout.add_label("PN frame rate")
+        self._standard_control_layout.add_label("PN frame rate")
         self._pn_fps_label = QtGui.QLabel("")
-        self._control_layout.add_control_widget(self._pn_fps_label)
+        self._standard_control_layout.add_control_widget(self._pn_fps_label)
 
     def _update_pn_fps_label(self, fps):
         if fps is not None:
             self._pn_fps_label.setText("%.1f" % fps)
         
     def _add_output_sender_status(self):
-        self._control_layout.add_label("OSC sender status")
+        self._standard_control_layout.add_label("OSC sender status")
         self._output_sender_status_label = QtGui.QLabel("")
-        self._control_layout.add_control_widget(self._output_sender_status_label)
+        self._standard_control_layout.add_control_widget(self._output_sender_status_label)
 
     def _update_output_sender_status_label(self, status):
         if status == True:
@@ -403,9 +419,9 @@ class BaseUiWindow(QtGui.QWidget):
             self._output_sender_status_label.setStyleSheet("QLabel { background-color : red; }")
 
     def _add_output_fps_label(self):
-        self._control_layout.add_label("Output frame rate")
+        self._standard_control_layout.add_label("Output frame rate")
         self._output_fps_label = QtGui.QLabel("")
-        self._control_layout.add_control_widget(self._output_fps_label)
+        self._standard_control_layout.add_control_widget(self._output_fps_label)
 
     def _update_output_fps_label(self, fps):
         if fps is not None:
@@ -413,8 +429,9 @@ class BaseUiWindow(QtGui.QWidget):
             
     def _create_menu(self):
         self._menu_bar = QtGui.QMenuBar()
-        self._control_layout.layout.setMenuBar(self._menu_bar)
+        self._main_layout.setMenuBar(self._menu_bar)
         self._create_main_menu()
+        self._create_view_menu()
 
     def _create_main_menu(self):
         self._main_menu = self._menu_bar.addMenu("&Main")
@@ -445,6 +462,19 @@ class BaseUiWindow(QtGui.QWidget):
         action = QtGui.QAction("&Quit", self)
         action.triggered.connect(QtGui.QApplication.exit)
         self._main_menu.addAction(action)
+        
+    def _create_view_menu(self):
+        self._view_menu = self._menu_bar.addMenu("View")
+        self._add_advanced_controls_action()
+
+    def _add_advanced_controls_action(self):
+        def on_toggled(action):
+            self._advanced_control_layout_widget.setVisible(action.isChecked())
+            
+        action = QtGui.QAction("Advanced controls", self)
+        action.setCheckable(True)
+        action.toggled.connect(lambda: on_toggled(action))
+        self._view_menu.addAction(action)
 
     def _add_start_recording_action(self):
         def start_recording():
