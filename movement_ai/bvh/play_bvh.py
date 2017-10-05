@@ -24,27 +24,66 @@ FRAME_RATE = 50
 class MainWindow(Window):
     def __init__(self, bvh_reader, args):
         Window.__init__(self, args)
-        self._layout = QtGui.QVBoxLayout()
-        self._layout.setSpacing(0)
-        self._layout.setMargin(0)
-        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._main_layout = QtGui.QVBoxLayout()
+        self._main_layout.setSpacing(0)
+        self._main_layout.setMargin(0)
+        self._main_layout.setContentsMargins(0, 0, 0, 0)
         self._scene = Scene(bvh_reader, args)
-        self._layout.addWidget(self._scene)
-        self.setLayout(self._layout)
+        self._main_layout.addWidget(self._scene)
+        control_layout = ControlLayout()
+        self._main_layout.addLayout(control_layout)
+        self._create_menu()
+        self.setLayout(self._main_layout)
+
+    def _create_menu(self):
+        self._menu_bar = QtGui.QMenuBar()
+        self._main_layout.setMenuBar(self._menu_bar)
+        self._create_main_menu()
+
+    def _create_main_menu(self):
+        self._main_menu = self._menu_bar.addMenu("&Main")
+        self._add_show_camera_settings_action()
+        self._add_quit_action()
+        
+    def _add_show_camera_settings_action(self):
+        action = QtGui.QAction('Show camera settings', self)
+        action.triggered.connect(self._scene.print_camera_settings)
+        self._main_menu.addAction(action)
+        
+    def _add_quit_action(self):
+        action = QtGui.QAction("&Quit", self)
+        action.triggered.connect(QtGui.QApplication.exit)
+        self._main_menu.addAction(action)
         
     def keyPressEvent(self, event):
         self._scene.keyPressEvent(event)
         QtGui.QWidget.keyPressEvent(self, event)
 
+class ControlLayout(QtGui.QHBoxLayout):
+    def __init__(self):
+        QtGui.QHBoxLayout.__init__(self)
+        self._add_play_button()
+        self._add_stop_button()
+
+    def _add_play_button(self):
+        button = QtGui.QPushButton(text="Play")
+        button.clicked.connect(transport.play)
+        self.addWidget(button)
+
+    def _add_stop_button(self):
+        button = QtGui.QPushButton(text="Stop")
+        button.clicked.connect(transport.stop)
+        self.addWidget(button)
+        
 class Scene(QtOpenGL.QGLWidget):
     def __init__(self, bvh_reader, args):
         self.bvh_reader = bvh_reader
         self.args = args
         self._pose = bvh_reader.get_hierarchy().create_pose()
-        self._start_time = time.time()
         self._set_camera_from_arg(args.camera)
         self._dragging_orientation = False
         self._dragging_y_position = False
+        self.width = None
         QtOpenGL.QGLWidget.__init__(self)
         self.setMouseTracking(True)
             
@@ -147,16 +186,16 @@ class Scene(QtOpenGL.QGLWidget):
         glTranslatef(*self._camera_position)
 
     def render(self):
+        if not self.width:
+            return
         self.configure_3d_projection(-100, 0)
         if args.unit_cube:
             self._draw_unit_cube()
         self._draw_skeleton()
+        transport.update()
 
     def _draw_skeleton(self):
-        t = (time.time() - self._start_time) * args.speed
-        if t > self.bvh_reader.get_duration() and not args.loop:
-            return
-        self.bvh_reader.set_pose_from_time(self._pose, t)
+        self.bvh_reader.set_pose_from_time(self._pose, transport.cursor)
         self._render_pose(self._pose)
                 
     def _render_pose(self, pose):
@@ -211,20 +250,50 @@ class Scene(QtOpenGL.QGLWidget):
         self._drag_x_previous = x
         self._drag_y_previous = y
 
-    def keyPressed(self, key, x, y):
-        if key == 'r':
-            self._rewind()
-        else:
-            window.Window.keyPressed(self, key, x, y)
+    def print_camera_settings(self):
+        print "%.3f,%.3f,%.3f,%.3f,%.3f" % (
+            self._camera_position[0],
+            self._camera_position[1],
+            self._camera_position[2],
+            self._camera_y_orientation, self._camera_x_orientation)
 
-    def _rewind(self):
-        self.t = 0
+class Transport:
+    def __init__(self, duration):
+        self._duration = duration
+        self._cursor = 0
+        self._playing = False
+
+    @property
+    def cursor(self):
+        return self._cursor
+    
+    def rewind(self):
+        self._cursor = 0
+
+    def play(self):
+        self._playing = True
+        self._previous_time = time.time()
+
+    def stop(self):
+        self._playing = False
+
+    def update(self):
+        now = time.time()
+        if self._playing:
+            self._cursor += now - self._previous_time
+            if self._cursor > self._duration:
+                if args.loop:
+                    self.rewind()
+                else:
+                    self._cursor = self._duration
+                    self.stop()
+        self._previous_time = now
 
 parser = ArgumentParser()
 Window.add_parser_arguments(parser)
 parser.add_argument("-bvh")
 parser.add_argument("--camera", help="posX,posY,posZ,orientY,orientX",
-                    default="-3.767,-1.400,-3.485,-55.500,18.500")
+                    default="-3.767,-1.400,-3.485,-71.900,4.800")
 parser.add_argument("-speed", type=float, default=1.0)
 parser.add_argument("-zoom", type=float, default=1.0)
 parser.add_argument("-unit-cube", action="store_true")
@@ -237,14 +306,7 @@ bvh_filenames = glob.glob(args.bvh)
 bvh_reader = BvhCollection(bvh_filenames)
 bvh_reader.read()
 
-if args.z_up:
-    bvh_coordinate_left = 0
-    bvh_coordinate_up = 2
-    bvh_coordinate_far = 1
-else:
-    bvh_coordinate_left = 0
-    bvh_coordinate_up = 1
-    bvh_coordinate_far = 2
+transport = Transport(bvh_reader.get_duration())
 
 app = QtGui.QApplication(sys.argv)
 window = MainWindow(bvh_reader, args)
