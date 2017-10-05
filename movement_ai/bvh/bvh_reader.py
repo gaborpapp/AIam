@@ -118,6 +118,9 @@ class BvhReader(cgkit.bvh.BVHReader):
 
     def set_pose_from_time(self, pose, t):
         frame_index = self._frame_index(t)
+        return self.set_pose_from_frame(pose, frame_index)
+
+    def set_pose_from_frame_index(self, pose, frame_index):
         return self.set_pose_from_frame(pose, self.frames[frame_index])
 
     def set_pose_from_frame(self, pose, frame, **kwargs):

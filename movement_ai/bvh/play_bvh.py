@@ -19,7 +19,6 @@ from ui.window import Window
 CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
-FRAME_RATE = 50
 SLIDER_PRECISION = 1000
 
 class MainWindow(Window):
@@ -65,6 +64,7 @@ class TransportLayout(QtGui.QHBoxLayout):
     def __init__(self):
         QtGui.QHBoxLayout.__init__(self)
         self._add_cursor_slider()
+        self._add_frame_index_label()
         self._add_play_button()
         self._add_stop_button()
 
@@ -77,13 +77,24 @@ class TransportLayout(QtGui.QHBoxLayout):
             return slider
 
         def on_changed_slider_value(slider_value):
-            transport.set_cursor(float(slider_value) / SLIDER_PRECISION * bvh_reader.get_duration())
+            frame_index = int(float(slider_value) / SLIDER_PRECISION * bvh_reader.get_num_frames())
+            transport.set_cursor(frame_index)
+            self._update_frame_index_label(frame_index)
             
         self._cursor_slider = create_slider()
         self.addWidget(self._cursor_slider)
 
-    def set_cursor_value(self, cursor):
-        self._cursor_slider.setValue(cursor / bvh_reader.get_duration() * SLIDER_PRECISION)
+    def set_cursor_value(self, frame_index):
+        self._cursor_slider.setValue(float(frame_index) / bvh_reader.get_num_frames() * SLIDER_PRECISION)
+        self._update_frame_index_label(frame_index)
+
+    def _update_frame_index_label(self, frame_index):
+        self._frame_index_label.setText("%d" % frame_index)
+
+    def _add_frame_index_label(self):
+        self._frame_index_label = QtGui.QLabel()
+        self._frame_index_label.setFixedWidth(60)
+        self.addWidget(self._frame_index_label)
         
     def _add_play_button(self):
         button = QtGui.QPushButton(text="Play")
@@ -108,7 +119,7 @@ class Scene(QtOpenGL.QGLWidget):
         self.setMouseTracking(True)
             
         timer = QtCore.QTimer(self)
-        timer.setInterval(1000. / FRAME_RATE)
+        timer.setInterval(1000 * bvh_reader.get_frame_time())
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self.updateGL)
         timer.start()
              
@@ -215,7 +226,7 @@ class Scene(QtOpenGL.QGLWidget):
             transport_layout.set_cursor_value(transport.cursor)
 
     def _draw_skeleton(self):
-        self.bvh_reader.set_pose_from_time(self._pose, transport.cursor)
+        self.bvh_reader.set_pose_from_frame_index(self._pose, transport.cursor)
         self._render_pose(self._pose)
                 
     def _render_pose(self, pose):
@@ -278,8 +289,8 @@ class Scene(QtOpenGL.QGLWidget):
             self._camera_y_orientation, self._camera_x_orientation)
 
 class Transport:
-    def __init__(self, duration):
-        self._duration = duration
+    def __init__(self, num_frames):
+        self._num_frames = num_frames
         self._cursor = 0
         self._is_playing = False
 
@@ -296,7 +307,6 @@ class Transport:
 
     def play(self):
         self._is_playing = True
-        self._previous_time = time.time()
 
     def stop(self):
         self._is_playing = False
@@ -304,17 +314,17 @@ class Transport:
     def update(self):
         now = time.time()
         if self._is_playing:
-            self._cursor += now - self._previous_time
-            if self._cursor >= self._duration:
+            self._cursor += 1
+            if self._cursor >= self._num_frames:
                 if args.loop:
                     self.rewind()
                 else:
-                    self._cursor = self._duration - 0.001
+                    self._cursor = self._num_frames - 1
                     self.stop()
         self._previous_time = now
 
     def set_cursor(self, value):
-        self._cursor = min(value, self._duration - 0.001)
+        self._cursor = min(value, self._num_frames - 1)
 
 parser = ArgumentParser()
 Window.add_parser_arguments(parser)
@@ -333,9 +343,10 @@ bvh_filenames = glob.glob(args.bvh)
 bvh_reader = BvhCollection(bvh_filenames)
 bvh_reader.read()
 
-transport = Transport(bvh_reader.get_duration())
+transport = Transport(bvh_reader.get_num_frames())
 
 app = QtGui.QApplication(sys.argv)
 window = MainWindow(bvh_reader, args)
+transport_layout.set_cursor_value(0)
 window.show()
 app.exec_()
