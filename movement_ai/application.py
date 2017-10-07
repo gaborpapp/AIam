@@ -23,8 +23,10 @@ class Avatar:
 class Application:
     @staticmethod
     def add_parser_arguments(parser):
-        parser.add_argument("--pn-host", default="localhost")
-        parser.add_argument("--pn-port", type=int, default=tracking.pn.receiver.SERVER_PORT_BVH)
+        parser.add_argument("--pn-address",
+                            default=["localhost:%s" % tracking.pn.receiver.SERVER_PORT_BVH],
+                            help="hostname:port",
+                            nargs="+")
         parser.add_argument("--pn-convert-to-z-up", action="store_true")
         parser.add_argument("--pn-translation-offset")
         parser.add_argument("--frame-rate", type=float, default=30.0)
@@ -44,6 +46,7 @@ class Application:
         self._create_entity = create_entity
         self._logger = logging.getLogger(self.__class__.__name__)
         self._pn_receiver = None
+        self._connected_to_pn = False
 
     def initialize(self):
         if self.args.random_seed is not None:
@@ -51,7 +54,7 @@ class Application:
 
         if self.receive_from_pn:
             self.on_pn_connection_status_changed(False)
-            self.try_connect_to_pn()
+            self.try_connect_to_pn(self.args.pn_address[0])
             
         if self.args.output_receiver_host:
             from connectivity import avatar_osc_sender
@@ -73,7 +76,7 @@ class Application:
         self._is_recording = False
         self._recorded_outputs = []
 
-    def try_connect_to_pn(self):
+    def try_connect_to_pn(self, pn_address):
         if self._create_entity is None:
             raise Exception("receive_from_pn requires create_entity to be defined")
         
@@ -91,14 +94,20 @@ class Application:
             input_from_pn[0:3] += pn_translation_offset
             self.set_input(input_from_pn)
 
+        pn_host, pn_port_string = pn_address.split(":")
+        pn_port = int(pn_port_string)
+        
+        self._disconnect_from_pn_if_connected()
         self._pn_receiver = tracking.pn.receiver.PnReceiver()
         self._pn_receiver.on_fps_changed = self.on_pn_fps_changed
-        self.print_and_log("connecting to PN server...")
+        self.print_and_log("connecting to PN server at %s ..." % pn_address)
+        
         try:
-            self._pn_receiver.connect(self.args.pn_host, self.args.pn_port)
+            self._pn_receiver.connect(pn_host, pn_port)
         except Exception as exception:
             self.print_and_log("Failed: %s" % exception)
             return
+        self._connected_to_pn = True
         self.print_and_log("ok")
         self.on_pn_connection_status_changed(True)
         pn_entity = self._create_entity()
@@ -111,6 +120,16 @@ class Application:
         pn_receiver_thread.daemon = True
         pn_receiver_thread.start()
 
+    def _disconnect_from_pn_if_connected(self):
+        if self._connected_to_pn:
+            self.print_and_log("disconnecting from PN server")
+            try:
+                self._pn_receiver.disconnect()
+            except Exception as exception:
+                self.print_and_log("Failed: %s" % exception)
+                return
+            self._connected_to_pn = False
+            
     def on_pn_connection_status_changed(self, status):
         pass
 
@@ -354,6 +373,7 @@ class BaseUiWindow(QtGui.QWidget):
         self._advanced_control_layout_widget.setVisible(False)
         
         if application.receive_from_pn:
+            self._add_pn_address_selector()
             self._add_pn_connection_status()
             self._add_pn_fps_label()
             application.on_pn_fps_changed = self._update_pn_fps_label
@@ -383,6 +403,18 @@ class BaseUiWindow(QtGui.QWidget):
     def _update_training_data_size_label(self):
         self._training_data_size_label.setText("%d" % self._application.training_data_size)
 
+    def _add_pn_address_selector(self):
+        def create_combobox():
+            combobox = QtGui.QComboBox()
+            print self._application.args.pn_address
+            for address in self._application.args.pn_address:
+                combobox.addItem(address)
+            return combobox
+
+        self._pn_selector_combobox = create_combobox()
+        self._standard_control_layout.add_label("PN address")
+        self._standard_control_layout.add_control_widget(self._pn_selector_combobox)
+        
     def _add_pn_connection_status(self):
         self._standard_control_layout.add_label("PN connection")
         self._pn_connection_status_label = QtGui.QLabel("")
@@ -444,8 +476,12 @@ class BaseUiWindow(QtGui.QWidget):
         self._add_quit_action()
 
     def _add_connect_to_pn_action(self):
+        def connect_to_pn():
+            pn_address = self._application.args.pn_address[self._pn_selector_combobox.currentIndex()]
+            self._application.try_connect_to_pn(pn_address)
+            
         action = QtGui.QAction("Connect to PN", self)
-        action.triggered.connect(self._application.try_connect_to_pn)
+        action.triggered.connect(connect_to_pn)
         self._main_menu.addAction(action)
         
     def _add_reset_model_action(self):

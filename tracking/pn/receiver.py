@@ -55,3 +55,7 @@ class PnReceiver:
 
     def on_fps_changed(self, fps):
         pass
+
+    def disconnect(self):
+        self._socket.close()
+            
