@@ -9,6 +9,8 @@ from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import glob
+import SocketServer
+import threading
 
 import sys
 import os
@@ -226,7 +228,11 @@ class Scene(QtOpenGL.QGLWidget):
             transport_layout.set_cursor_value(transport.cursor)
 
     def _draw_skeleton(self):
-        self.bvh_reader.set_pose_from_frame_index(self._pose, transport.cursor)
+        global pn_frame_values
+        frame_index = transport.cursor
+        if args.simulate_pn:
+            pn_frame_values = self.bvh_reader.get_frame_by_index(frame_index)
+        self.bvh_reader.set_pose_from_frame_index(self._pose, frame_index)
         self._render_pose(self._pose)
                 
     def _render_pose(self, pose):
@@ -337,6 +343,8 @@ parser.add_argument("-unit-cube", action="store_true")
 parser.add_argument("-loop", action="store_true")
 parser.add_argument("-vertex-size", type=float, default=0)
 parser.add_argument("--z-up", action="store_true")
+parser.add_argument("--simulate-pn", action="store_true")
+parser.add_argument("--pn-port", default=7002)
 args = parser.parse_args()
 
 bvh_filenames = glob.glob(args.bvh)
@@ -344,6 +352,41 @@ bvh_reader = BvhCollection(bvh_filenames)
 bvh_reader.read()
 
 transport = Transport(bvh_reader.get_num_frames())
+
+if args.simulate_pn:
+    class PnSimulatorHandler(SocketServer.BaseRequestHandler):
+        def handle(self):
+            global pn_frame_values
+
+            frame_rate = 1.0 /bvh_reader.get_frame_time()
+            sending_start_time = time.time()
+            num_frames_sent = 0
+            while True:
+                if num_frames_sent > 0:
+                    sending_fps = float(num_frames_sent) / (time.time() - sending_start_time)
+                    if sending_fps > frame_rate:
+                        time.sleep(0.00001)
+                        continue
+
+                if pn_frame_values is not None:
+                    string = "mock_ID mock_name"
+                    for value in pn_frame_values:
+                        string += " "
+                        string += str(value)
+                    string += "||\n"
+                    self.request.sendall(string)
+
+                num_frames_sent += 1
+
+    class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+        pass
+
+    pn_frame = None
+    server = ThreadedTCPServer(("localhost", args.pn_port), PnSimulatorHandler)
+    server.allow_reuse_address = True
+    server_thread = threading.Thread(target=server.serve_forever)
+    server_thread.daemon = True
+    server_thread.start()
 
 app = QtGui.QApplication(sys.argv)
 window = MainWindow(bvh_reader, args)
