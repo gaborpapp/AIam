@@ -22,6 +22,7 @@ CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
 SLIDER_PRECISION = 1000
+FRAME_RATE = 30
 
 class MainWindow(Window):
     def __init__(self, bvh_reader, args):
@@ -80,7 +81,7 @@ class TransportLayout(QtGui.QHBoxLayout):
 
         def on_changed_slider_value(slider_value):
             frame_index = int(float(slider_value) / SLIDER_PRECISION * bvh_reader.get_num_frames())
-            transport.set_cursor(frame_index)
+            transport.set_frame_index(frame_index)
             self._update_frame_index_label(frame_index)
             
         self._cursor_slider = create_slider()
@@ -122,7 +123,7 @@ class Scene(QtOpenGL.QGLWidget):
         self.setMouseTracking(True)
             
         timer = QtCore.QTimer(self)
-        timer.setInterval(1000 * bvh_reader.get_frame_time()) 
+        timer.setInterval(1.0 / FRAME_RATE)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self.updateGL)
         timer.start()
              
@@ -226,11 +227,11 @@ class Scene(QtOpenGL.QGLWidget):
         self._draw_skeleton()
         transport.update()
         if transport.is_playing:
-            transport_layout.set_cursor_value(transport.cursor)
+            transport_layout.set_cursor_value(transport.frame_index)
 
     def _draw_skeleton(self):
         global pn_frame_values
-        frame_index = transport.cursor
+        frame_index = transport.frame_index
         if frame_index != self._previous_frame_index:
             if args.simulate_pn:
                 pn_frame_values = self.bvh_reader.get_frame_by_index(frame_index)
@@ -301,24 +302,33 @@ class Scene(QtOpenGL.QGLWidget):
             self._camera_y_orientation, self._camera_x_orientation)
 
 class Transport:
-    def __init__(self, num_frames):
+    def __init__(self, num_frames, duration, frame_rate):
         self._num_frames = num_frames
-        self._cursor = 0
+        self._duration = duration
+        self._frame_rate = frame_rate
+        self._frame_index = 0
+        self._time = 0
         self._is_playing = False
 
     @property
-    def cursor(self):
-        return self._cursor
+    def frame_index(self):
+        return self._frame_index
 
     @property
     def is_playing(self):
         return self._is_playing
     
     def rewind(self):
-        self._cursor = 0
+        self.set_time(0)
+
+    def set_time(self, t):
+        self._time = t
+        self.set_frame_index(int(self._time * self._frame_rate))
 
     def play(self):
         self._is_playing = True
+        self._play_start_time = time.time()
+        self._play_time_offset = self._time
 
     def stop(self):
         self._is_playing = False
@@ -326,17 +336,18 @@ class Transport:
     def update(self):
         now = time.time()
         if self._is_playing:
-            self._cursor += 1
-            if self._cursor >= self._num_frames:
+            self.set_time(self._play_time_offset + now - self._play_start_time)
+            if self._time >= self._duration:
                 if args.loop:
                     self.rewind()
                 else:
-                    self._cursor = self._num_frames - 1
+                    self.set_frame_index(self._num_frames - 1)
                     self.stop()
-        self._previous_time = now
 
-    def set_cursor(self, value):
-        self._cursor = min(value, self._num_frames - 1)
+    def set_frame_index(self, value):
+        self._frame_index = min(value, self._num_frames - 1)
+        if not self._is_playing:
+            self._time = float(self._frame_index) / self._frame_rate
 
 parser = ArgumentParser()
 Window.add_parser_arguments(parser)
@@ -357,14 +368,17 @@ bvh_filenames = glob.glob(args.bvh)
 bvh_reader = BvhCollection(bvh_filenames)
 bvh_reader.read()
 
-transport = Transport(bvh_reader.get_num_frames())
+frame_rate = 1.0 / bvh_reader.get_frame_time()
+transport = Transport(
+    bvh_reader.get_num_frames(),
+    bvh_reader.get_duration(),
+    frame_rate)
 
 if args.simulate_pn:
     class PnSimulatorHandler(SocketServer.BaseRequestHandler):
         def handle(self):
             global pn_frame_values
 
-            frame_rate = 1.0 /bvh_reader.get_frame_time()
             sending_start_time = time.time()
             num_frames_sent = 0
             while True:
