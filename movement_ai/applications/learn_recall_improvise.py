@@ -241,7 +241,7 @@ class UiWindow(BaseUiWindow):
         self._standard_control_layout.add_control_widget(create_combobox())
         
     def _add_learning_rate_control(self):
-        control = self._standard_control_layout.add_slider_row(
+        control = self._advanced_control_layout.add_slider_row(
             label="Learning rate", min_value=0, max_value=MAX_LEARNING_RATE, default_value=args.learning_rate,
             on_changed_value=students["autoencoder"].set_learning_rate)
         self._add_control_to_preset_manager("learning_rate", control)
