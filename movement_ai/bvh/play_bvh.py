@@ -118,10 +118,11 @@ class Scene(QtOpenGL.QGLWidget):
         self._dragging_y_position = False
         self.width = None
         QtOpenGL.QGLWidget.__init__(self)
+        self._previous_frame_index = None
         self.setMouseTracking(True)
             
         timer = QtCore.QTimer(self)
-        timer.setInterval(1000 * bvh_reader.get_frame_time())
+        timer.setInterval(1000 * bvh_reader.get_frame_time()) 
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self.updateGL)
         timer.start()
              
@@ -230,28 +231,33 @@ class Scene(QtOpenGL.QGLWidget):
     def _draw_skeleton(self):
         global pn_frame_values
         frame_index = transport.cursor
-        if args.simulate_pn:
-            pn_frame_values = self.bvh_reader.get_frame_by_index(frame_index)
-        self.bvh_reader.set_pose_from_frame_index(self._pose, frame_index)
-        self._render_pose(self._pose)
-                
-    def _render_pose(self, pose):
-        glColor3f(1, 1, 1)
-        glLineWidth(5.0)
-        self._render_joint(pose.get_root_joint())
+        if frame_index != self._previous_frame_index:
+            if args.simulate_pn:
+                pn_frame_values = self.bvh_reader.get_frame_by_index(frame_index)
+            self.bvh_reader.set_pose_from_frame_index(self._pose, frame_index)
+            self._process_pose_to_edges()
+            self._previous_frame_index = frame_index
+        self._render_edges()
         
-    def _render_joint(self, joint):
+    def _process_pose_to_edges(self):
+        self._edges = []
+        self._process_joint_to_edges_recurse(self._pose.get_root_joint())
+        
+    def _process_joint_to_edges_recurse(self, joint):
         for child in joint.children:
             v1 = self.bvh_reader.normalize_vector_without_translation(joint.worldpos)
             v2 = self.bvh_reader.normalize_vector_without_translation(child.worldpos)
-            self._render_edge(v1, v2)
-            self._render_joint(child)
+            self._edges.append((v1, v2))
+            self._process_joint_to_edges_recurse(child)
 
-    def _render_edge(self, v1, v2):
-        glBegin(GL_LINES)
-        self._vertex(v1)
-        self._vertex(v2)
-        glEnd()
+    def _render_edges(self):
+        glColor3f(1, 1, 1)
+        glLineWidth(5.0)
+        for v1, v2 in self._edges:
+            glBegin(GL_LINES)
+            self._vertex(v1)
+            self._vertex(v2)
+            glEnd()
 
     def _vertex(self, worldpos):
         if self.args.z_up:
