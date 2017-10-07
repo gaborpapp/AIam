@@ -406,7 +406,6 @@ class BaseUiWindow(QtGui.QWidget):
     def _add_pn_address_selector(self):
         def create_combobox():
             combobox = QtGui.QComboBox()
-            print self._application.args.pn_address
             for address in self._application.args.pn_address:
                 combobox.addItem(address)
             return combobox
