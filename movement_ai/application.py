@@ -48,6 +48,13 @@ class Application:
         self._pn_receiver = None
         self._connected_to_pn = False
 
+    @property
+    def can_create_entity(self):
+        return self._create_entity is not None
+    
+    def create_entity(self):
+        return self._create_entity()
+    
     def initialize(self):
         if self.args.random_seed is not None:
             random.seed(self.args.random_seed)
@@ -81,7 +88,6 @@ class Application:
         self._previous_frame_time = None
         self._fps_meter = FpsMeter("output")
         self._is_recording = False
-        self._recorded_outputs = []
 
     def try_connect_to_pn(self, pn_address):
         if self._create_entity is None:
@@ -238,27 +244,33 @@ class Application:
 
     def start_recording(self):
         self._logger.debug("start_recording()")
-        self._recording_path = "recordings/%s.bvh" % time.strftime("%Y_%d_%m_%H%M%S")
-        self._logger.debug("recording path: %s" % self._recording_path)
-        print "Recording to %s" % self._recording_path
-        self._bvh_writer = BvhWriter(
-            self._avatars[0].entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
         self._recording_frame_index = 0
         self._recorded_outputs = []
         self._is_recording = True
+        print "Started recording"
 
     def stop_recording(self):
         self._logger.debug("stop_recording()")
-        self._logger.debug("recording path: %s" % self._recording_path)
-        print "Writing %s ..." % self._recording_path
-        avatar = self._avatars[0]
-        for output in self._recorded_outputs:
-            avatar.entity.parameters_to_processed_pose(output, avatar.entity.pose)
-            self._bvh_writer.add_pose_as_frame(avatar.entity.pose)
-        self._bvh_writer.write(self._recording_path)
-        print "OK"
+        path = "recordings/%s.bvh" % time.strftime("%Y_%d_%m_%H%M%S")
+        self._logger.debug("recording path: %s" % path)
         self._is_recording = False
-        
+        print "Stopped recording"
+
+        def save_recording(outputs):
+            print "Writing %s ..." % path
+            entity = self._create_entity()
+            avatar = self._avatars[0]
+            bvh_writer = BvhWriter(entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
+            for output in self._recorded_outputs:
+                entity.parameters_to_processed_pose(output, entity.pose)
+                bvh_writer.add_pose_as_frame(entity.pose)
+            bvh_writer.write(path)
+            print "Finished writing %s" % path
+
+        thread = threading.Thread(
+            target=lambda: save_recording(self._recorded_outputs))
+        thread.start()
+                
 class Memory:
     def __init__(self):
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -486,8 +498,9 @@ class BaseUiWindow(QtGui.QWidget):
         self._main_menu = self._menu_bar.addMenu("&Main")
         self._add_reset_model_action()
         self._add_reset_output_sender_action()
-        self._add_start_recording_action()
-        self._add_stop_recording_action()
+        if self._application.can_create_entity:
+            self._add_start_recording_action()
+            self._add_stop_recording_action()
         self._add_quit_action()
         
     def _add_reset_model_action(self):

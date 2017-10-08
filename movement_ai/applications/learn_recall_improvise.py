@@ -109,10 +109,11 @@ students = {
 students["autoencoder"].set_learning_rate(args.learning_rate)
 
 def set_model(model_name):
-    global student
+    global student, current_model
     application.set_student(students[model_name])
     student = students[model_name]
     master_behavior.set_model(model_name)
+    current_model = model_name
 
 def set_max_angular_step(max_angular_step):
     master_entity.set_max_angular_step(max_angular_step)
@@ -125,6 +126,7 @@ class UiWindow(BaseUiWindow):
         self._current_preset = None
         self._preset_manager = PresetManager()
         self._add_save_preset_action()
+        self._add_reload_model_action()
         self._add_reset_translation_action()
         self._create_memory_menu()
         self._add_preset_control()
@@ -173,6 +175,15 @@ class UiWindow(BaseUiWindow):
         action = QtGui.QAction("Save preset", self)
         action.setShortcut("Ctrl+s")
         action.triggered.connect(save_preset)
+        self._main_menu.addAction(action)
+
+    def _add_reload_model_action(self):
+        def load_model():
+            model_info = MODELS_INFO[current_model]
+            student.load(model_info["path"])
+
+        action = QtGui.QAction("Reload model", self)
+        action.triggered.connect(load_model)
         self._main_menu.addAction(action)
         
     def _add_reset_translation_action(self):

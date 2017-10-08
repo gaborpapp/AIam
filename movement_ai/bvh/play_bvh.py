@@ -32,7 +32,7 @@ FRAME_RATE = 30
 
 class MainWindow(Window):
     def __init__(self, bvh_reader, args):
-        global transport_layout
+        global transport_controls
         Window.__init__(self, args)
         self._main_layout = QtGui.QVBoxLayout()
         self._main_layout.setSpacing(0)
@@ -40,8 +40,8 @@ class MainWindow(Window):
         self._main_layout.setContentsMargins(0, 0, 0, 0)
         self._scene = Scene(bvh_reader, args)
         self._main_layout.addWidget(self._scene)
-        transport_layout = TransportLayout()
-        self._main_layout.addLayout(transport_layout)
+        transport_controls = TransportControls()
+        self._main_layout.addWidget(transport_controls.widget)
         self._create_menu()
         self.setLayout(self._main_layout)
 
@@ -69,15 +69,28 @@ class MainWindow(Window):
         self._scene.keyPressEvent(event)
         QtGui.QWidget.keyPressEvent(self, event)
 
-class TransportLayout(QtGui.QHBoxLayout):
+class TransportControls:
     def __init__(self):
-        QtGui.QHBoxLayout.__init__(self)
-        self._add_cursor_slider()
-        self._add_frame_index_label()
-        self._add_play_button()
-        self._add_stop_button()
+        self._widget = QtGui.QWidget()
+        main_layout = QtGui.QVBoxLayout()
+        self._widget.setLayout(main_layout)
+        
+        top_layout = QtGui.QHBoxLayout()
+        self._add_cursor_slider(top_layout)
+        self._add_frame_index_label(top_layout)
+        self._add_time_label(top_layout)
+        main_layout.addLayout(top_layout)
 
-    def _add_cursor_slider(self):
+        bottom_layout = QtGui.QHBoxLayout()
+        self._add_play_button(bottom_layout)
+        self._add_stop_button(bottom_layout)
+        main_layout.addLayout(bottom_layout)
+
+    @property
+    def widget(self):
+        return self._widget
+
+    def _add_cursor_slider(self, layout):
         def create_slider():
             slider = QtGui.QSlider(QtCore.Qt.Horizontal)
             slider.setRange(0, SLIDER_PRECISION)
@@ -86,34 +99,45 @@ class TransportLayout(QtGui.QHBoxLayout):
             return slider
 
         def on_changed_slider_value(slider_value):
-            frame_index = int(float(slider_value) / SLIDER_PRECISION * bvh_reader.get_num_frames())
-            transport.set_frame_index(frame_index)
-            self._update_frame_index_label(frame_index)
+            if not transport.is_playing:
+                t = int(float(slider_value) / SLIDER_PRECISION * bvh_reader.get_duration())
+                transport.set_time(t)
+                self._update_frame_index_label(transport.frame_index)
+                self._update_time_label(t)
             
         self._cursor_slider = create_slider()
-        self.addWidget(self._cursor_slider)
+        layout.addWidget(self._cursor_slider)
 
-    def set_cursor_value(self, frame_index):
-        self._cursor_slider.setValue(float(frame_index) / bvh_reader.get_num_frames() * SLIDER_PRECISION)
-        self._update_frame_index_label(frame_index)
+    def on_transport_updated(self):
+        self._cursor_slider.setValue(float(transport.time) / bvh_reader.get_duration() * SLIDER_PRECISION)
+        self._update_frame_index_label(transport.frame_index)
+        self._update_time_label(transport.time)
 
     def _update_frame_index_label(self, frame_index):
         self._frame_index_label.setText("%d" % frame_index)
 
-    def _add_frame_index_label(self):
+    def _add_frame_index_label(self, layout):
         self._frame_index_label = QtGui.QLabel()
         self._frame_index_label.setFixedWidth(60)
-        self.addWidget(self._frame_index_label)
+        layout.addWidget(self._frame_index_label)
+
+    def _add_time_label(self, layout):
+        self._time_label = QtGui.QLabel()
+        self._time_label.setFixedWidth(100)
+        layout.addWidget(self._time_label)
+
+    def _update_time_label(self, t):
+        self._time_label.setText(time.strftime("%H:%M:%S", time.gmtime(t)))
         
-    def _add_play_button(self):
+    def _add_play_button(self, layout):
         button = QtGui.QPushButton(text="Play")
         button.clicked.connect(transport.play)
-        self.addWidget(button)
+        layout.addWidget(button)
 
-    def _add_stop_button(self):
+    def _add_stop_button(self, layout):
         button = QtGui.QPushButton(text="Stop")
         button.clicked.connect(transport.stop)
-        self.addWidget(button)
+        layout.addWidget(button)
         
 class Scene(QtOpenGL.QGLWidget):
     def __init__(self, bvh_reader, args):
@@ -237,7 +261,7 @@ class Scene(QtOpenGL.QGLWidget):
         self._draw_skeleton()
         transport.update()
         if transport.is_playing:
-            transport_layout.set_cursor_value(transport.frame_index)
+            transport_controls.on_transport_updated()
 
     def _draw_skeleton(self):
         global pn_frame_values
@@ -325,6 +349,10 @@ class Transport:
         return self._frame_index
 
     @property
+    def time(self):
+        return self._time
+    
+    @property
     def is_playing(self):
         return self._is_playing
     
@@ -333,7 +361,7 @@ class Transport:
 
     def set_time(self, t):
         self._time = t
-        self.set_frame_index(int(self._time * self._frame_rate))
+        self._set_frame_index(int(self._time * self._frame_rate))
 
     def play(self):
         self._is_playing = True
@@ -351,10 +379,10 @@ class Transport:
                 if args.loop:
                     self.rewind()
                 else:
-                    self.set_frame_index(self._num_frames - 1)
+                    self._set_frame_index(self._num_frames - 1)
                     self.stop()
 
-    def set_frame_index(self, value):
+    def _set_frame_index(self, value):
         self._frame_index = min(value, self._num_frames - 1)
         if not self._is_playing:
             self._time = float(self._frame_index) / self._frame_rate
@@ -420,6 +448,6 @@ if args.simulate_pn:
 
 app = QtGui.QApplication(sys.argv)
 window = MainWindow(bvh_reader, args)
-transport_layout.set_cursor_value(0)
+transport_controls.on_transport_updated()
 window.show()
 app.exec_()
