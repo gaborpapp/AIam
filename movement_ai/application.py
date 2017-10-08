@@ -119,7 +119,7 @@ class Application:
         if self._connected_to_pn:
             self.print_and_log("disconnecting from PN server")
             try:
-                self._pn_receiver.disconnect()
+                self._pn_receiver.stop()
             except Exception as exception:
                 self.print_and_log("Failed: %s" % exception)
                 return
