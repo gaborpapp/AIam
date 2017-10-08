@@ -53,6 +53,13 @@ class Application:
             random.seed(self.args.random_seed)
 
         if self.receive_from_pn:
+            self._pn_entity = self._create_entity()
+            if self.args.pn_translation_offset:
+                self._pn_translation_offset = numpy.array(
+                    [float(string) for string in self.args.pn_translation_offset.split(",")])
+            else:
+                self._pn_translation_offset = numpy.array([0,0,0])
+            self._pn_frame = None
             self.on_pn_connection_status_changed(False)
             self.try_connect_to_pn(self.args.pn_address[0])
             
@@ -80,19 +87,13 @@ class Application:
         if self._create_entity is None:
             raise Exception("receive_from_pn requires create_entity to be defined")
         
-        def receive_from_pn(pn_entity):
+        def receive_from_pn():
             try:
                 for frame in self._pn_receiver.get_frames():
-                    process_frame(frame)
+                    self.set_pn_frame(frame)
             except tracking.pn.receiver.RemotePeerShutDown:
                 self.print_and_log("Lost connection to PN!")
                 self.on_pn_connection_status_changed(False)
-
-        def process_frame(frame):
-            input_from_pn = pn_entity.get_value_from_frame(
-                frame, convert_to_z_up=self.args.pn_convert_to_z_up)
-            input_from_pn[0:3] += pn_translation_offset
-            self.set_input(input_from_pn)
 
         pn_host, pn_port_string = pn_address.split(":")
         pn_port = int(pn_port_string)
@@ -110,13 +111,7 @@ class Application:
         self._connected_to_pn = True
         self.print_and_log("ok")
         self.on_pn_connection_status_changed(True)
-        pn_entity = self._create_entity()
-        if self.args.pn_translation_offset:
-            pn_translation_offset = numpy.array(
-                [float(string) for string in self.args.pn_translation_offset.split(",")])
-        else:
-            pn_translation_offset = numpy.array([0,0,0])
-        pn_receiver_thread = threading.Thread(target=lambda: receive_from_pn(pn_entity))
+        pn_receiver_thread = threading.Thread(target=receive_from_pn)
         pn_receiver_thread.daemon = True
         pn_receiver_thread.start()
 
@@ -145,6 +140,9 @@ class Application:
     def set_input(self, input_):
         self._input = input_
 
+    def set_pn_frame(self, frame):
+        self._pn_frame = frame
+        
     def set_student(self, student):
         self._student = student
 
@@ -159,6 +157,10 @@ class Application:
 
     def update(self):
         now = time.time()
+
+        if self._pn_frame is not None:
+            self._process_pn_frame(self._pn_frame)
+            
         if self._input is not None and self._student.supports_incremental_learning():
             self._student.train([self._input])
             if self._frame_count % self.args.training_data_interval == 0:
@@ -189,6 +191,12 @@ class Application:
         self._frame_count += 1
         self._fps_meter.update()
         self.on_output_fps_changed(self._fps_meter.get_fps())
+
+    def _process_pn_frame(self, frame):
+        input_from_pn = self._pn_entity.get_value_from_frame(
+            frame, convert_to_z_up=self.args.pn_convert_to_z_up)
+        input_from_pn[0:3] += self._pn_translation_offset
+        self.set_input(input_from_pn)
 
     def on_output_fps_changed(self, fps):
         pass
