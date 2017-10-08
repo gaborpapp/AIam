@@ -16,8 +16,14 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/..")
 
+from ui.floor_checkerboard import FloorCheckerboard
 from ui.window import Window
 
+FLOOR_ARGS = {"num_cells": 26, "size": 26,
+              "board_color1": (.2, .2, .2, 1),
+              "board_color2": (.3, .3, .3, 1),
+              "floor_color": None,
+              "background_color": (0.0, 0.0, 0.0, 0.0)}
 CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
@@ -121,6 +127,7 @@ class Scene(QtOpenGL.QGLWidget):
         QtOpenGL.QGLWidget.__init__(self)
         self._previous_frame_index = None
         self.setMouseTracking(True)
+        self._floor = FloorCheckerboard(**FLOOR_ARGS)
             
         timer = QtCore.QTimer(self)
         timer.setInterval(1.0 / FRAME_RATE)
@@ -222,6 +229,9 @@ class Scene(QtOpenGL.QGLWidget):
 
     def render(self):
         self.configure_3d_projection(-100, 0)
+        camera_x = self._camera_position[0]
+        camera_z = self._camera_position[2]
+        self._floor.render(0, 0, camera_x, camera_z)
         if args.unit_cube:
             self._draw_unit_cube()
         self._draw_skeleton()
