@@ -410,9 +410,19 @@ class BaseUiWindow(QtGui.QWidget):
                 combobox.addItem(address)
             return combobox
 
+        def create_connect_button():
+            def on_clicked():
+                pn_address = self._application.args.pn_address[self._pn_selector_combobox.currentIndex()]
+                self._application.try_connect_to_pn(pn_address)
+
+            button = QtGui.QPushButton(text="Connect")
+            button.clicked.connect(on_clicked)
+            return button
+            
         self._pn_selector_combobox = create_combobox()
         self._standard_control_layout.add_label("PN address")
-        self._standard_control_layout.add_control_widget(self._pn_selector_combobox)
+        self._standard_control_layout.add_control_widgets(
+            [self._pn_selector_combobox, create_connect_button()])
         
     def _add_pn_connection_status(self):
         self._standard_control_layout.add_label("PN connection")
@@ -466,22 +476,11 @@ class BaseUiWindow(QtGui.QWidget):
 
     def _create_main_menu(self):
         self._main_menu = self._menu_bar.addMenu("&Main")
-        if self._application.receive_from_pn:
-            self._add_connect_to_pn_action()
         self._add_reset_model_action()
         self._add_reset_output_sender_action()
         self._add_start_recording_action()
         self._add_stop_recording_action()
         self._add_quit_action()
-
-    def _add_connect_to_pn_action(self):
-        def connect_to_pn():
-            pn_address = self._application.args.pn_address[self._pn_selector_combobox.currentIndex()]
-            self._application.try_connect_to_pn(pn_address)
-            
-        action = QtGui.QAction("Connect to PN", self)
-        action.triggered.connect(connect_to_pn)
-        self._main_menu.addAction(action)
         
     def _add_reset_model_action(self):
         action = QtGui.QAction("Reset model", self)
