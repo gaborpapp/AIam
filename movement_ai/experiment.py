@@ -111,7 +111,6 @@ class Experiment(EventListener):
         parser.add_argument("--launch-when-ready", help="Run command when websocket server ready")
         parser.add_argument("--output-receiver-host")
         parser.add_argument("--output-receiver-port", type=int, default=10000)
-        parser.add_argument("--output-receiver-type", choices=["bvh", "world"], default="bvh")
         parser.add_argument("--with-profiler", action="store_true")
         parser.add_argument("--z-up", action="store_true", help="Use Z-up for BVHs")
         parser.add_argument("--show-fps", action="store_true")
@@ -216,12 +215,8 @@ class Experiment(EventListener):
 
         if args.output_receiver_host:
             from connectivity import avatar_osc_sender
-            if args.output_receiver_type == "world":
-                self._output_sender = avatar_osc_sender.AvatarOscWorldSender(
-                    args.output_receiver_port, args.output_receiver_host)
-            elif args.output_receiver_type == "bvh":
-                self._output_sender = avatar_osc_sender.AvatarOscBvhSender(
-                    args.output_receiver_port, args.output_receiver_host)
+            self._output_sender = avatar_osc_sender.AvatarOscBvhSender(
+                args.output_receiver_port, args.output_receiver_host)
         else:
             self._output_sender = None
             
@@ -396,10 +391,12 @@ class Experiment(EventListener):
 
         self.previous_frame_time = self.now
 
-        if self._exporting_output:
-            self._export_bvh()
-        if self._output_sender:
-            self._send_output()
+        if self.output is not None and (self._exporting_output or self._output_sender):
+            self.entity.parameters_to_processed_pose(self.output, self.pose)
+            if self._exporting_output:
+                self._export_bvh()
+            if self._output_sender:
+                self._send_output()
 
     def _proceed_and_update(self):
         self.proceed()
@@ -409,8 +406,7 @@ class Experiment(EventListener):
         self.send_event_to_ui(Event(Event.FRAME_COUNT, self._frame_count))
             
     def process_and_broadcast_output(self):
-        if (self._server.client_subscribes_to(Event.OUTPUT) or
-            self._output_sender and self.args.output_receiver_type == "world"):
+        if self._server.client_subscribes_to(Event.OUTPUT):
             self.processed_output = self.entity.process_output(self.output)
             self.send_event_to_ui(Event(Event.OUTPUT, self.processed_output))
 
@@ -486,14 +482,11 @@ class Experiment(EventListener):
             i += 1
 
     def _export_bvh(self):
-        if self.output is not None:
-            self.entity.parameters_to_processed_pose(self.output, self.pose)
-            self.bvh_writer.add_pose_as_frame(self.pose)
+        self.bvh_writer.add_pose_as_frame(self.pose)
 
     def _send_output(self):
-        if self.output is not None:
-            avatar_index = 0
-            self._output_sender.send_frame(avatar_index, self.output, self.entity)
+        avatar_index = 0
+        self._output_sender.send_frame(avatar_index, self.pose, self.entity)
 
     def _receive_from_pn(self):
         for frame in self._pn_receiver.get_frames():

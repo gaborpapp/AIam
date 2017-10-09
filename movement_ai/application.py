@@ -32,7 +32,6 @@ class Application:
         parser.add_argument("--frame-rate", type=float, default=30.0)
         parser.add_argument("--output-receiver-host")
         parser.add_argument("--output-receiver-port", type=int, default=10000)
-        parser.add_argument("--output-receiver-type", choices=["bvh", "world"], default="bvh")
         parser.add_argument("--random-seed", type=int)
         parser.add_argument("--memory-size", type=int, default=100)
         parser.add_argument("--training-data-interval", type=int, default=5)
@@ -72,12 +71,8 @@ class Application:
             
         if self.args.output_receiver_host:
             from connectivity import avatar_osc_sender
-            if self.args.output_receiver_type == "world":
-                self._output_sender = avatar_osc_sender.AvatarOscWorldSender(
-                    self.args.output_receiver_port, self.args.output_receiver_host)
-            elif self.args.output_receiver_type == "bvh":
-                self._output_sender = avatar_osc_sender.AvatarOscBvhSender(
-                    self.args.output_receiver_port, self.args.output_receiver_host)
+            self._output_sender = avatar_osc_sender.AvatarOscBvhSender(
+                self.args.output_receiver_port, self.args.output_receiver_host)
         else:
             self._output_sender = None
 
@@ -188,8 +183,9 @@ class Application:
                 if reduction is not None:
                     output = self._student.inverse_transform(numpy.array([reduction]))[0]
             if output is not None:
+                avatar.entity.parameters_to_processed_pose(output, avatar.entity.pose)
                 if self._output_sender is not None:
-                    self._send_output_and_handle_sender_status(avatar, output)
+                    self._send_output_and_handle_sender_status(avatar)
                 if self._is_recording:
                     self._add_to_bvh(avatar, output)
 
@@ -211,8 +207,8 @@ class Application:
     def training_data_size(self):
         return len(self._training_data)
 
-    def _send_output_and_handle_sender_status(self, avatar, output):
-        self._output_sender.send_frame(avatar.index, output, avatar.entity)
+    def _send_output_and_handle_sender_status(self, avatar):
+        self._output_sender.send_frame(avatar.index, avatar.entity.pose, avatar.entity)
         status = self._output_sender.get_status()
         self.on_output_sender_status_changed(status)
 
