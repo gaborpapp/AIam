@@ -399,7 +399,7 @@ parser.add_argument("-loop", action="store_true")
 parser.add_argument("-vertex-size", type=float, default=0)
 parser.add_argument("--z-up", action="store_true")
 parser.add_argument("--simulate-pn", action="store_true")
-parser.add_argument("--pn-port", default=7002)
+parser.add_argument("--pn-port", type=int, default=7002)
 args = parser.parse_args()
 
 bvh_filenames = glob.glob(args.bvh)

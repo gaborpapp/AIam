@@ -13,17 +13,6 @@ class AvatarOscSender:
     def get_status(self):
         return self._osc_sender.get_status()
             
-class AvatarOscWorldSender(AvatarOscSender):
-    def send_frame(self, avatar_index, output, entity):
-        self._osc_sender.send("/avatar_begin", avatar_index, self._frame_index)
-        processed_output = entity.process_output(output)
-        for joint_index, worldpos in enumerate(processed_output):
-            self._osc_sender.send(
-                "/world", self._frame_index, joint_index,
-                worldpos[0], worldpos[1], worldpos[2])
-        self._osc_sender.send("/avatar_end")
-        self._frame_index += 1
-
 class AvatarOscBvhSender(AvatarOscSender):
     def __init__(self, *args, **kwargs):
         AvatarOscSender.__init__(self, *args, **kwargs)
@@ -32,11 +21,10 @@ class AvatarOscBvhSender(AvatarOscSender):
         AvatarOscSender.reset(self)
         self._sent_joint_ids = False
         
-    def send_frame(self, avatar_index, output, entity):
+    def send_frame(self, avatar_index, pose, entity):
         self._ensure_sent_joint_ids(entity)
         self._osc_sender.send("/avatar_begin", avatar_index, self._frame_index)
-        entity.parameters_to_processed_pose(output, entity.pose)
-        self._send_output_bvh_recurse(entity.pose.get_root_joint())
+        self._send_output_bvh_recurse(pose.get_root_joint())
         self._osc_sender.send("/avatar_end")
         self._frame_index += 1
 

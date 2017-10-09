@@ -122,11 +122,8 @@ class Scene(QtOpenGL.QGLWidget):
         self._osc_receiver = OscReceiver(args.port)
         self._osc_receiver.add_method("/avatar_begin", "ii", self._handle_avatar_begin)
         self._osc_receiver.add_method("/avatar_end", "", self._handle_avatar_end)
-        if self.args.type == "bvh":
-            self._osc_receiver.add_method("/translation", "iifff", self._handle_translation)
-            self._osc_receiver.add_method("/orientation", "iifff", self._handle_orientation)
-        elif self.args.type == "world":
-            self._osc_receiver.add_method("/world", "iifff", self._handle_world)
+        self._osc_receiver.add_method("/translation", "iifff", self._handle_translation)
+        self._osc_receiver.add_method("/orientation", "iifff", self._handle_orientation)
         self._osc_receiver.start(auto_serve=True)
 
         self._x_rotation_index = self._hierarchy.get_rotation_index("x")
@@ -143,10 +140,7 @@ class Scene(QtOpenGL.QGLWidget):
                 for n in range(self._hierarchy.get_num_joints())]
 
     def _create_empty_joint_data(self):
-        if self.args.type == "bvh":
-            return {}
-        elif self.args.type == "world":
-            return None
+        return {}
 
     def _handle_avatar_begin(self, path, args, types, src, user_data):
         index = args[0]
@@ -158,19 +152,10 @@ class Scene(QtOpenGL.QGLWidget):
     def _handle_avatar_end(self, path, args, types, src, user_data):
         if self._current_avatar is None:
             return
-        if self.args.type == "world":
-            self._current_avatar.vertices = copy.copy(self._current_avatar.frame)
-        elif self.args.type == "bvh":
-            self._current_avatar.joint_info = copy.copy(self._current_avatar.frame)
+        self._current_avatar.joint_info = copy.copy(self._current_avatar.frame)
         self._current_avatar.is_renderable = True
         self._current_avatar.frame = None
         self._current_avatar = None
-        
-    def _handle_world(self, path, args, types, src, user_data):
-        if self._current_avatar is None:
-            return
-        frame_count, joint_index, x, y, z = args
-        self._current_avatar.frame[joint_index] = (x, y, z)
 
     def _handle_translation(self, path, args, types, src, user_data):
         if self._current_avatar is None:
@@ -312,13 +297,8 @@ class Scene(QtOpenGL.QGLWidget):
     def _render_avatar(self, avatar):
         glColor3f(1, 1, 1)
         glLineWidth(5.0)
-        if self.args.type == "bvh":
-            self._hierarchy.set_pose_from_joint_dicts(avatar.pose, avatar.joint_info)
-            self._render_pose(avatar.pose)
-        elif self.args.type == "world":
-            edges = self.bvh_reader.vertices_to_edges(avatar.vertices)
-            for edge in edges:
-                self._render_edge(edge.v1, edge.v2)
+        self._hierarchy.set_pose_from_joint_dicts(avatar.pose, avatar.joint_info)
+        self._render_pose(avatar.pose)
                 
     def _render_pose(self, pose):
         glColor3f(1, 1, 1)
@@ -382,7 +362,6 @@ parser.add_argument("--camera", help="posX,posY,posZ,orientY,orientX",
                     default="-3.767,-1.400,-3.485,-55.500,18.500")
 parser.add_argument("--port", type=int, default=10000)
 parser.add_argument("--z-up", action="store_true")
-parser.add_argument("--type", choices=["bvh", "world"], default="bvh")
 parser.add_argument("--enable-floor", action="store_true")
 args = parser.parse_args()
 
