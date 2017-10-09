@@ -187,7 +187,7 @@ class Application:
                 if self._output_sender is not None:
                     self._send_output_and_handle_sender_status(avatar)
                 if self._is_recording:
-                    self._add_to_bvh(avatar, output)
+                    self._add_to_bvh(avatar)
 
         self._previous_frame_time = now
         self._frame_count += 1
@@ -215,9 +215,9 @@ class Application:
     def on_output_sender_status_changed(self):
         pass
 
-    def _add_to_bvh(self, avatar, output):
+    def _add_to_bvh(self, avatar):
         self._logger.debug("_add_to_bvh with index %s" % self._recording_frame_index)
-        self._recorded_outputs.append(output)
+        self._bvh_writer.add_pose_as_frame(avatar.entity.pose)
         self._recording_frame_index += 1
         
     def _wait_until_next_frame_is_timely(self):
@@ -240,8 +240,9 @@ class Application:
 
     def start_recording(self):
         self._logger.debug("start_recording()")
+        self._bvh_writer = BvhWriter(
+            self._avatars[0].entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
         self._recording_frame_index = 0
-        self._recorded_outputs = []
         self._is_recording = True
         print "Started recording"
 
@@ -252,19 +253,12 @@ class Application:
         self._is_recording = False
         print "Stopped recording"
 
-        def save_recording(outputs):
+        def save_recording():
             print "Writing %s ..." % path
-            entity = self._create_entity()
-            avatar = self._avatars[0]
-            bvh_writer = BvhWriter(entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
-            for output in self._recorded_outputs:
-                entity.parameters_to_processed_pose(output, entity.pose)
-                bvh_writer.add_pose_as_frame(entity.pose)
-            bvh_writer.write(path)
+            self._bvh_writer.write(path)
             print "Finished writing %s" % path
 
-        thread = threading.Thread(
-            target=lambda: save_recording(self._recorded_outputs))
+        thread = threading.Thread(target=save_recording)
         thread.start()
                 
 class Memory:
