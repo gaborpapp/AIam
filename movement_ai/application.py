@@ -548,6 +548,7 @@ class BaseUiWindow(QtGui.QWidget):
     def _create_view_menu(self):
         self._view_menu = self._menu_bar.addMenu("View")
         self._add_output_action()
+        self._add_camera_actions()
         self._add_advanced_controls_action()
 
     def _add_output_action(self):
@@ -559,6 +560,18 @@ class BaseUiWindow(QtGui.QWidget):
         action.setShortcut("Tab")
         action.toggled.connect(lambda: on_toggled(action))
         self._view_menu.addAction(action)
+
+    def _add_camera_actions(self):
+        def add_camera_action(shortcut, key, name):
+            action = QtGui.QAction(name, self)
+            action.setShortcut(shortcut)
+            action.triggered.connect(lambda: self._output_scene.key_pressed(key))
+            self._view_menu.addAction(action)
+            
+        add_camera_action("A", QtCore.Qt.Key_A, "Camera left")
+        add_camera_action("D", QtCore.Qt.Key_D, "Camera right")
+        add_camera_action("W", QtCore.Qt.Key_W, "Camera front")
+        add_camera_action("S", QtCore.Qt.Key_S, "Camera back")
         
     def _add_advanced_controls_action(self):
         def on_toggled(action):
@@ -672,10 +685,9 @@ class OutputScene(QtOpenGL.QGLWidget):
         self._camera_y_orientation = y_orientation
         self._camera_x_orientation = x_orientation
 
-    def keyPressEvent(self, event):
+    def key_pressed(self, key):
         r = math.radians(self._camera_y_orientation)
         new_position = self._camera_position
-        key = event.key()
         if key == QtCore.Qt.Key_A:
             new_position[0] += CAMERA_KEY_SPEED * math.cos(r)
             new_position[2] += CAMERA_KEY_SPEED * math.sin(r)
