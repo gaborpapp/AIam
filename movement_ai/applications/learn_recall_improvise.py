@@ -739,7 +739,7 @@ def clear_memory():
 avatars = [avatar]
 
 application = Application(
-    students[args.model], avatars, args, receive_from_pn=True, create_entity=create_entity)
+    students[args.model], avatars, args, receive_from_pn=True, create_entity=create_entity, z_up=Z_UP)
 
 set_model(args.model)
 set_max_angular_step(args.max_angular_step)
@@ -748,7 +748,7 @@ if args.with_ui:
     qt_app = QtGui.QApplication(sys.argv)
     ui_window = UiWindow(master_behavior)
     ui_window.show()
-    application.initialize()
+    application.initialize(ui_window)
     if args.preset:
         ui_window.set_preset(args.preset)
     qt_app.exec_()

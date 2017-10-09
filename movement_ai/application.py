@@ -4,13 +4,28 @@ import random
 import collections
 import threading
 import logging
-from PyQt4 import QtGui, QtCore
+from PyQt4 import QtGui, QtCore, QtOpenGL
+from OpenGL.GL import *
+from OpenGL.GLUT import *
+from OpenGL.GLU import *
+import math
+import copy
 
 from entities.hierarchical import Entity
 import tracking.pn.receiver
 from fps_meter import FpsMeter
 from ui.control_layout import ControlLayout
+from ui.floor_checkerboard import FloorCheckerboard
 from bvh.bvh_writer import BvhWriter
+
+FLOOR_ARGS = {"num_cells": 26, "size": 26,
+              "board_color1": (.2, .2, .2, 1),
+              "board_color2": (.3, .3, .3, 1),
+              "floor_color": None,
+              "background_color": (0.0, 0.0, 0.0, 0.0)}
+CAMERA_Y_SPEED = .01
+CAMERA_KEY_SPEED = .1
+CAMERA_DRAG_SPEED = .1
 
 FpsMeter.print_fps = False
 
@@ -35,18 +50,25 @@ class Application:
         parser.add_argument("--random-seed", type=int)
         parser.add_argument("--memory-size", type=int, default=100)
         parser.add_argument("--training-data-interval", type=int, default=5)
+        parser.add_argument("--camera", help="posX,posY,posZ,orientY,orientX",
+                            default="-3.767,-1.400,-3.485,-71.900,4.800")
         Entity.add_parser_arguments(parser)
         
-    def __init__(self, student, avatars, args, receive_from_pn=False, create_entity=None):
+    def __init__(self, student, avatars, args, receive_from_pn=False, create_entity=None, z_up=False):
         self._student = student
         self._avatars = avatars
         self.args = args
         self.receive_from_pn = receive_from_pn
         self._create_entity = create_entity
+        self.z_up = z_up
         self._logger = logging.getLogger(self.__class__.__name__)
         self._pn_receiver = None
         self._connected_to_pn = False
 
+    @property
+    def avatars(self):
+        return self._avatars
+    
     @property
     def can_create_entity(self):
         return self._create_entity is not None
@@ -54,7 +76,9 @@ class Application:
     def create_entity(self):
         return self._create_entity()
     
-    def initialize(self):
+    def initialize(self, ui_window=None):
+        self._ui_window = ui_window
+        
         if self.args.random_seed is not None:
             random.seed(self.args.random_seed)
 
@@ -184,6 +208,7 @@ class Application:
                     output = self._student.inverse_transform(numpy.array([reduction]))[0]
             if output is not None:
                 avatar.entity.parameters_to_processed_pose(output, avatar.entity.pose)
+                self._ui_window.on_output_pose(avatar.entity.pose)
                 if self._output_sender is not None:
                     self._send_output_and_handle_sender_status(avatar)
                 if self._is_recording:
@@ -365,22 +390,30 @@ class BaseUiWindow(QtGui.QWidget):
         self._application = application
         self._master_behavior = master_behavior
 
-        self._main_layout = QtGui.QVBoxLayout()
+        self._main_layout = QtGui.QHBoxLayout()
         self._main_layout.setSpacing(0)
         self._main_layout.setMargin(0)
         self._main_layout.setContentsMargins(0, 0, 0, 0)
-        self.setLayout(self._main_layout)
+        
+        panel_layout = QtGui.QVBoxLayout()
         
         self._standard_control_layout = ControlLayout()
         self._standard_control_layout_widget = QtGui.QWidget()
         self._standard_control_layout_widget.setLayout(self._standard_control_layout.layout)
-        self._main_layout.addWidget(self._standard_control_layout_widget)
+        panel_layout.addWidget(self._standard_control_layout_widget)
         
         self._advanced_control_layout = ControlLayout()
         self._advanced_control_layout_widget = QtGui.QWidget()
         self._advanced_control_layout_widget.setLayout(self._advanced_control_layout.layout)
-        self._main_layout.addWidget(self._advanced_control_layout_widget)
+        panel_layout.addWidget(self._advanced_control_layout_widget)
         self._advanced_control_layout_widget.setVisible(False)
+
+        self._main_layout.addLayout(panel_layout)
+
+        self._output_scene = OutputScene(application.avatars[0].entity, application)
+        self.set_view_output(False)
+        self._main_layout.addWidget(self._output_scene)
+        self.setLayout(self._main_layout)
         
         if application.receive_from_pn:
             self._add_pn_address_selector()
@@ -400,6 +433,10 @@ class BaseUiWindow(QtGui.QWidget):
         timer = QtCore.QTimer(self)
         QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self._update)
         timer.start()
+
+    def set_view_output(self, enabled):
+        self._view_output = enabled
+        self._output_scene.set_enabled(enabled)
 
     def _update(self):
         self._application.update_if_timely()
@@ -510,8 +547,19 @@ class BaseUiWindow(QtGui.QWidget):
         
     def _create_view_menu(self):
         self._view_menu = self._menu_bar.addMenu("View")
+        self._add_output_action()
         self._add_advanced_controls_action()
 
+    def _add_output_action(self):
+        def on_toggled(action):
+            self.set_view_output(action.isChecked())
+            
+        action = QtGui.QAction("Output", self)
+        action.setCheckable(True)
+        action.setShortcut("Tab")
+        action.toggled.connect(lambda: on_toggled(action))
+        self._view_menu.addAction(action)
+        
     def _add_advanced_controls_action(self):
         def on_toggled(action):
             self._advanced_control_layout_widget.setVisible(action.isChecked())
@@ -541,6 +589,233 @@ class BaseUiWindow(QtGui.QWidget):
         self._stop_recording_action.triggered.connect(stop_recording)
         self._stop_recording_action.setEnabled(False)
         self._main_menu.addAction(self._stop_recording_action)
+
+    def on_output_pose(self, pose):
+        if self._view_output:
+            self._output_scene.set_pose(pose)
+        
+class OutputScene(QtOpenGL.QGLWidget):
+    def __init__(self, entity, application):
+        self._entity = entity
+        self._application = application
+        self.bvh_reader = entity.bvh_reader
+        self._hierarchy = self.bvh_reader.get_hierarchy()
+        self._pose = self.bvh_reader.create_pose()
+        self.args = application.args
+        self._set_camera_from_arg(self.args.camera)
+        self._dragging_orientation = False
+        self._dragging_y_position = False
+        self.width = None
+        QtOpenGL.QGLWidget.__init__(self)
+        self._previous_frame_index = None
+        self.setMouseTracking(True)
+        self._floor = FloorCheckerboard(**FLOOR_ARGS)
+        self._joint_info = None
+            
+        self._x_rotation_index = self._hierarchy.get_rotation_index("x")
+        self._y_rotation_index = self._hierarchy.get_rotation_index("y")
+        self._z_rotation_index = self._hierarchy.get_rotation_index("z")
+
+        self._frame = self._new_frame()
+
+        self._timer = QtCore.QTimer(self)
+        self._timer.setInterval(1.0 / self.args.frame_rate)
+        QtCore.QObject.connect(self._timer, QtCore.SIGNAL('timeout()'), self.updateGL)
+        
+    def set_enabled(self, enabled):
+        self.setVisible(enabled)
+        if enabled:
+            self._timer.start()
+        else:
+            self._timer.stop()
+
+    def _new_frame(self):
+        return [self._create_empty_joint_data()
+                for n in range(self._hierarchy.get_num_joints())]
+
+    def _create_empty_joint_data(self):
+        return {}
+
+    def set_pose(self, pose):
+        self._process_joint_recurse(pose.get_root_joint())
+        self._joint_info = copy.copy(self._frame)
+
+    def _process_joint_recurse(self, joint):
+        if not joint.definition.has_parent:
+            self._process_joint_translation(joint)
+        if joint.definition.has_rotation:
+            self._process_joint_orientation(joint)
+        for child in joint.children:
+            self._process_joint_recurse(child)
+
+    def _process_joint_translation(self, joint):
+        self._frame[joint.definition.index].update(
+            {"Xposition": joint.worldpos[0],
+             "Yposition": joint.worldpos[1],
+             "Zposition": joint.worldpos[2]})
+
+    def _process_joint_orientation(self, joint):
+        self._frame[joint.definition.index].update(
+            {"Xrotation": math.degrees(joint.angles[self._x_rotation_index]),
+             "Yrotation": math.degrees(joint.angles[self._y_rotation_index]),
+             "Zrotation": math.degrees(joint.angles[self._z_rotation_index])})
+        
+    def _set_camera_from_arg(self, arg):
+        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, arg.split(","))
+        self._set_camera_position([pos_x, pos_y, pos_z])
+        self._set_camera_orientation(orient_y, orient_z)
+
+    def _set_camera_position(self, position):
+        self._camera_position = position
+
+    def _set_camera_orientation(self, y_orientation, x_orientation):
+        self._camera_y_orientation = y_orientation
+        self._camera_x_orientation = x_orientation
+
+    def keyPressEvent(self, event):
+        r = math.radians(self._camera_y_orientation)
+        new_position = self._camera_position
+        key = event.key()
+        if key == QtCore.Qt.Key_A:
+            new_position[0] += CAMERA_KEY_SPEED * math.cos(r)
+            new_position[2] += CAMERA_KEY_SPEED * math.sin(r)
+            self._set_camera_position(new_position)
+            return
+        elif key == QtCore.Qt.Key_D:
+            new_position[0] -= CAMERA_KEY_SPEED * math.cos(r)
+            new_position[2] -= CAMERA_KEY_SPEED * math.sin(r)
+            self._set_camera_position(new_position)
+            return
+        elif key == QtCore.Qt.Key_W:
+            new_position[0] += CAMERA_KEY_SPEED * math.cos(r + math.pi/2)
+            new_position[2] += CAMERA_KEY_SPEED * math.sin(r + math.pi/2)
+            self._set_camera_position(new_position)
+            return
+        elif key == QtCore.Qt.Key_S:
+            new_position[0] -= CAMERA_KEY_SPEED * math.cos(r + math.pi/2)
+            new_position[2] -= CAMERA_KEY_SPEED * math.sin(r + math.pi/2)
+            self._set_camera_position(new_position)
+            return
+
+    def sizeHint(self):
+        return QtCore.QSize(640, 480)
+
+    def initializeGL(self):
+        glClearColor(0.0, 0.0, 0.0, 0.0)
+        glClearAccum(0.0, 0.0, 0.0, 0.0)
+        glClearDepth(1.0)
+        glShadeModel(GL_SMOOTH)
+        glEnable(GL_LINE_SMOOTH)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glutInit(sys.argv)
+
+    def resizeGL(self, window_width, window_height):
+        self.window_width = window_width
+        self.window_height = window_height
+        if window_height == 0:
+            window_height = 1
+        glViewport(0, 0, window_width, window_height)
+        self.margin = 0
+        self.width = window_width - 2*self.margin
+        self.height = window_height - 2*self.margin
+        self._aspect_ratio = float(window_width) / window_height
+        self.min_dimension = min(self.width, self.height)
+
+    def paintGL(self):
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+        glLoadIdentity()
+        glTranslatef(self.margin, self.margin, 0)
+        self.render()
+
+    def configure_3d_projection(self, pixdx=0, pixdy=0):
+        self.fovy = 45
+        self.near = 0.1
+        self.far = 100.0
+
+        fov2 = ((self.fovy*math.pi) / 180.0) / 2.0
+        top = self.near * math.tan(fov2)
+        bottom = -top
+        right = top * self._aspect_ratio
+        left = -right
+        xwsize = right - left
+        ywsize = top - bottom
+        dx = -(pixdx*xwsize/self.width)
+        dy = -(pixdy*ywsize/self.height)
+
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        glFrustum (left + dx, right + dx, bottom + dy, top + dy, self.near, self.far)
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        glRotatef(self._camera_x_orientation, 1.0, 0.0, 0.0)
+        glRotatef(self._camera_y_orientation, 0.0, 1.0, 0.0)
+        glTranslatef(*self._camera_position)
+
+    def render(self):
+        self.configure_3d_projection(-100, 0)
+        camera_x = self._camera_position[0]
+        camera_z = self._camera_position[2]
+        self._floor.render(0, 0, camera_x, camera_z)
+        if self._joint_info is not None:
+            self._hierarchy.set_pose_from_joint_dicts(self._pose, self._joint_info)
+            self._render_pose(self._pose)
+                
+    def _render_pose(self, pose):
+        glColor3f(1, 1, 1)
+        glLineWidth(5.0)
+        self._render_joint(pose.get_root_joint())
+        
+    def _render_joint(self, joint):
+        for child in joint.children:
+            v1 = self.bvh_reader.normalize_vector_without_translation(joint.worldpos)
+            v2 = self.bvh_reader.normalize_vector_without_translation(child.worldpos)
+            self._render_edge(v1, v2)
+            self._render_joint(child)
+
+    def _render_edge(self, v1, v2):
+        glBegin(GL_LINES)
+        self._vertex(v1)
+        self._vertex(v2)
+        glEnd()
+
+    def _vertex(self, worldpos):
+        if self._application.z_up:
+            glVertex3f(worldpos[0], worldpos[2], worldpos[1])
+        else:
+            glVertex3f(worldpos[0], worldpos[1], worldpos[2])
+
+    def mousePressEvent(self, event):
+        if event.button() == QtCore.Qt.LeftButton:
+            self._dragging_orientation = True
+        elif event.button() == QtCore.Qt.RightButton:
+            self._dragging_y_position = True
+
+    def mouseReleaseEvent(self, event):
+        self._dragging_orientation = False
+        self._dragging_y_position = False
+        self._drag_x_previous = event.x()
+        self._drag_y_previous = event.y()
+
+    def mouseMoveEvent(self, event):
+        x = event.x()
+        y = event.y()
+        if self._dragging_orientation:
+            self._set_camera_orientation(
+                self._camera_y_orientation + CAMERA_DRAG_SPEED * (x - self._drag_x_previous),
+                self._camera_x_orientation + CAMERA_DRAG_SPEED * (y - self._drag_y_previous))
+        elif self._dragging_y_position:
+            self._camera_position[1] += CAMERA_Y_SPEED * (y - self._drag_y_previous)
+        self._drag_x_previous = x
+        self._drag_y_previous = y
+
+    def print_camera_settings(self):
+        print "%.3f,%.3f,%.3f,%.3f,%.3f" % (
+            self._camera_position[0],
+            self._camera_position[1],
+            self._camera_position[2],
+            self._camera_y_orientation, self._camera_x_orientation)
         
 def set_up_logging():
     logging.basicConfig(
