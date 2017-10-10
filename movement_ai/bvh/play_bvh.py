@@ -85,8 +85,8 @@ class TransportControls:
         bottom_layout = QtGui.QHBoxLayout()
         self._add_play_button(bottom_layout)
         self._add_stop_button(bottom_layout)
-        self._add_skip_button("Skip backward", -1, bottom_layout)
-        self._add_skip_button("Skip forward", 1, bottom_layout)
+        self._add_skip_button("Skip backward", QtCore.Qt.Key_Left, -1, bottom_layout)
+        self._add_skip_button("Skip forward", QtCore.Qt.Key_Right, 1, bottom_layout)
         main_layout.addLayout(bottom_layout)
 
     @property
@@ -145,12 +145,13 @@ class TransportControls:
         button.clicked.connect(transport.stop)
         layout.addWidget(button)
 
-    def _add_skip_button(self, text, direction_factor, layout):
+    def _add_skip_button(self, text, shortcut_key, direction_factor, layout):
         def skip_frames():
             transport.skip_frames(direction_factor)
             
         button = QtGui.QPushButton(text=text)
         button.clicked.connect(skip_frames)
+        button.setShortcut(shortcut_key)
         layout.addWidget(button)
         
 class Scene(QtOpenGL.QGLWidget):
