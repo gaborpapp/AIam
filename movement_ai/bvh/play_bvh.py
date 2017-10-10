@@ -53,9 +53,16 @@ class MainWindow(Window):
 
     def _create_main_menu(self):
         self._main_menu = self._menu_bar.addMenu("&Main")
+        self._add_play_stop_action()
         self._add_show_camera_settings_action()
         self._add_quit_action()
-        
+
+    def _add_play_stop_action(self):
+        action = QtGui.QAction('Play/stop', self)
+        action.triggered.connect(transport.toggle_play)
+        action.setShortcut(" ")
+        self._main_menu.addAction(action)
+    
     def _add_show_camera_settings_action(self):
         action = QtGui.QAction('Show camera settings', self)
         action.triggered.connect(self._scene.print_camera_settings)
@@ -391,6 +398,12 @@ class Transport:
         self._is_playing = False
         self._is_active = False
 
+    def toggle_play(self):
+        if self._is_playing:
+            self.stop()
+        else:
+            self.play()
+            
     def update(self):
         now = time.time()
         if self._is_playing:
