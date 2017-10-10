@@ -131,15 +131,15 @@ class Application:
         self._pn_receiver = tracking.pn.receiver.PnReceiver()
         self._pn_receiver.on_fps_changed = self.on_pn_fps_changed
         self._pn_receiver.on_status_message = on_status_message
-        self.print_and_log("connecting to PN server at %s ..." % pn_address)
+        self.print_and_log("Connecting to PN server at %s ..." % pn_address)
         
         try:
             self._pn_receiver.connect(pn_host, pn_port)
         except Exception as exception:
-            self.print_and_log("Failed: %s" % exception)
+            self.print_and_log("Connection to PN server at %s failed: %s" % (pn_address, exception))
             return
         self._connected_to_pn = True
-        self.print_and_log("ok")
+        self.print_and_log("Succesfully connected to PN server at %s" % pn_address)
         self.on_pn_connection_status_changed(True)
         pn_receiver_thread = threading.Thread(target=receive_from_pn)
         pn_receiver_thread.daemon = True
@@ -147,11 +147,11 @@ class Application:
 
     def _disconnect_from_pn_if_connected(self):
         if self._connected_to_pn:
-            self.print_and_log("disconnecting from PN server")
+            self.print_and_log("Disconnecting from PN server")
             try:
                 self._pn_receiver.stop()
             except Exception as exception:
-                self.print_and_log("Failed: %s" % exception)
+                self.print_and_log("Stopping PN server failed: %s" % exception)
                 return
             self._connected_to_pn = False
             

@@ -56,11 +56,13 @@ class PnReceiver:
                 yield line
 
         if self._should_stop:
-            self._dispatch_status_message("Stopped. Disconnecting.")
+            self._dispatch_status_message("Stopped. Closing connection ...")
             try:
                 self._socket.close()
-            except socket.error:
-                pass
+            except Exception as exception:
+                self._dispatch_status_message("Failed to close socket: %s" % exception)
+                return
+            self._dispatch_status_message("Succesfully closed connection.")
         else:
             self._dispatch_status_message("Remote peer shut down.")
             raise RemotePeerShutDown()
