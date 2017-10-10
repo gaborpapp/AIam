@@ -120,12 +120,16 @@ class Application:
                 self.print_and_log("Lost connection to PN!")
                 self.on_pn_connection_status_changed(False)
 
+        def on_status_message(message):
+            self.print_and_log(message)
+            
         pn_host, pn_port_string = pn_address.split(":")
         pn_port = int(pn_port_string)
         
         self._disconnect_from_pn_if_connected()
         self._pn_receiver = tracking.pn.receiver.PnReceiver()
         self._pn_receiver.on_fps_changed = self.on_pn_fps_changed
+        self._pn_receiver.on_status_message = on_status_message
         self.print_and_log("connecting to PN server at %s ..." % pn_address)
         
         try:
