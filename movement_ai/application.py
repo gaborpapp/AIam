@@ -26,6 +26,7 @@ FLOOR_ARGS = {"num_cells": 26, "size": 26,
 CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
+LOG_HEIGHT = 50
 
 FpsMeter.print_fps = False
 
@@ -120,21 +121,25 @@ class Application:
                 self.print_and_log("Lost connection to PN!")
                 self.on_pn_connection_status_changed(False)
 
+        def on_status_message(message):
+            self.print_and_log(message)
+            
         pn_host, pn_port_string = pn_address.split(":")
         pn_port = int(pn_port_string)
         
         self._disconnect_from_pn_if_connected()
         self._pn_receiver = tracking.pn.receiver.PnReceiver()
         self._pn_receiver.on_fps_changed = self.on_pn_fps_changed
-        self.print_and_log("connecting to PN server at %s ..." % pn_address)
+        self._pn_receiver.on_status_message = on_status_message
+        self.print_and_log("Connecting to PN server at %s ..." % pn_address)
         
         try:
             self._pn_receiver.connect(pn_host, pn_port)
         except Exception as exception:
-            self.print_and_log("Failed: %s" % exception)
+            self.print_and_log("Connection to PN server at %s failed: %s" % (pn_address, exception))
             return
         self._connected_to_pn = True
-        self.print_and_log("ok")
+        self.print_and_log("Succesfully connected to PN server at %s" % pn_address)
         self.on_pn_connection_status_changed(True)
         pn_receiver_thread = threading.Thread(target=receive_from_pn)
         pn_receiver_thread.daemon = True
@@ -142,11 +147,11 @@ class Application:
 
     def _disconnect_from_pn_if_connected(self):
         if self._connected_to_pn:
-            self.print_and_log("disconnecting from PN server")
+            self.print_and_log("Disconnecting from PN server")
             try:
                 self._pn_receiver.stop()
             except Exception as exception:
-                self.print_and_log("Failed: %s" % exception)
+                self.print_and_log("Stopping PN server failed: %s" % exception)
                 return
             self._connected_to_pn = False
             
@@ -260,7 +265,9 @@ class Application:
         pass
 
     def print_and_log(self, message):
-        print message
+        timestamped_message = "%s %s" % (time.strftime("%Y-%d-%m %H:%M:%S"), message)
+        print timestamped_message
+        self._ui_window.append_to_log_widget(timestamped_message + "\n")
         self._logger.info(message)
 
     def start_recording(self):
@@ -408,6 +415,9 @@ class BaseUiWindow(QtGui.QWidget):
         panel_layout.addWidget(self._advanced_control_layout_widget)
         self._advanced_control_layout_widget.setVisible(False)
 
+        self._log_widget = LogWidget(self)
+        panel_layout.addWidget(self._log_widget)
+        
         self._main_layout.addLayout(panel_layout)
 
         self._output_scene = OutputScene(application.avatars[0].entity, application)
@@ -606,7 +616,33 @@ class BaseUiWindow(QtGui.QWidget):
     def on_output_pose(self, pose):
         if self._view_output:
             self._output_scene.set_pose(pose)
-        
+
+    def append_to_log_widget(self, string):
+        QtGui.QApplication.postEvent(self, CustomQtEvent(lambda: self._log_widget.append(string)))
+
+    def customEvent(self, custom_qt_event):
+        custom_qt_event.callback()
+
+class CustomQtEvent(QtCore.QEvent):
+    EVENT_TYPE = QtCore.QEvent.Type(QtCore.QEvent.registerEventType())
+
+    def __init__(self, callback):
+        QtCore.QEvent.__init__(self, CustomQtEvent.EVENT_TYPE)
+        self.callback = callback
+
+class LogWidget(QtGui.QTextEdit):
+    def __init__(self, *args, **kwargs):
+        QtGui.QTextEdit.__init__(self, *args, **kwargs)
+        self.setReadOnly(True)
+
+    def append(self, string):
+        self.insertPlainText(string)
+        scrollbar = self.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def sizeHint(self):
+        return QtCore.QSize(640, LOG_HEIGHT)
+
 class OutputScene(QtOpenGL.QGLWidget):
     def __init__(self, entity, application):
         self._entity = entity

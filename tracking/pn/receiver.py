@@ -56,20 +56,23 @@ class PnReceiver:
                 yield line
 
         if self._should_stop:
-            print "%s : Stopped. Disconnecting." % self._name
+            self._dispatch_status_message("Stopped. Closing connection ...")
             try:
                 self._socket.close()
-            except socket.error:
-                pass
+            except Exception as exception:
+                self._dispatch_status_message("Failed to close socket: %s" % exception)
+                return
+            self._dispatch_status_message("Succesfully closed connection.")
         else:
-            print "%s : Remote peer shut down." % self._name
+            self._dispatch_status_message("Remote peer shut down.")
             raise RemotePeerShutDown()
 
     def _warn_about_lag_if_no_recent_recv_would_block(self, now):
         time_since_last_emptied_buffer = now - self._time_of_last_blocking_recv
         if time_since_last_emptied_buffer > MAX_TIME_FOR_BLOCKING_RECV:
-            print "%s : Warning: %.1fs since socket.recv would block. This may indicate a lag." % (
-                self._name, time_since_last_emptied_buffer)
+            self._dispatch_status_message(
+                "Warning: %.1fs since socket.recv would block. This may indicate a lag." % \
+                time_since_last_emptied_buffer)
             self._postpone_next_lag_warning(now)
 
     def _postpone_next_lag_warning(self, now):
@@ -91,3 +94,10 @@ class PnReceiver:
 
     def stop(self):
         self._should_stop = True
+
+    def _dispatch_status_message(self, message):
+        decorated_message = "%s: %s" % (self._name, message)
+        self.on_status_message(decorated_message)
+        
+    def on_status_message(self, message):
+        print message
