@@ -153,11 +153,11 @@ class TransportControls:
         layout.addWidget(button)
 
     def _add_skip_button(self, text, shortcut_key, direction_factor, layout):
-        def skip_frames():
-            transport.skip_frames(direction_factor)
+        def skip():
+            transport.skip(direction_factor)
             
         button = QtGui.QPushButton(text=text)
-        button.clicked.connect(skip_frames)
+        button.clicked.connect(skip)
         button.setShortcut(shortcut_key)
         layout.addWidget(button)
         
@@ -421,9 +421,9 @@ class Transport:
             self._time = float(self._frame_index) / self._frame_rate
         self.on_updated()
 
-    def skip_frames(self, direction_factor):
+    def skip(self, direction_factor):
         self._is_active = True
-        self._set_frame_index(self._frame_index + direction_factor * 10)
+        self.set_time(self._time + direction_factor * 1)
         self._is_active = False
         
 parser = ArgumentParser()
