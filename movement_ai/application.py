@@ -26,6 +26,7 @@ FLOOR_ARGS = {"num_cells": 26, "size": 26,
 CAMERA_Y_SPEED = .01
 CAMERA_KEY_SPEED = .1
 CAMERA_DRAG_SPEED = .1
+LOG_HEIGHT = 50
 
 FpsMeter.print_fps = False
 
@@ -264,7 +265,9 @@ class Application:
         pass
 
     def print_and_log(self, message):
-        print message
+        timestamped_message = "%s %s" % (time.strftime("%Y-%d-%m %H:%M:%S"), message)
+        print timestamped_message
+        self._ui_window.append_to_log_widget(timestamped_message + "\n")
         self._logger.info(message)
 
     def start_recording(self):
@@ -412,6 +415,9 @@ class BaseUiWindow(QtGui.QWidget):
         panel_layout.addWidget(self._advanced_control_layout_widget)
         self._advanced_control_layout_widget.setVisible(False)
 
+        self._log_widget = LogWidget(self)
+        panel_layout.addWidget(self._log_widget)
+        
         self._main_layout.addLayout(panel_layout)
 
         self._output_scene = OutputScene(application.avatars[0].entity, application)
@@ -610,7 +616,33 @@ class BaseUiWindow(QtGui.QWidget):
     def on_output_pose(self, pose):
         if self._view_output:
             self._output_scene.set_pose(pose)
-        
+
+    def append_to_log_widget(self, string):
+        QtGui.QApplication.postEvent(self, CustomQtEvent(lambda: self._log_widget.append(string)))
+
+    def customEvent(self, custom_qt_event):
+        custom_qt_event.callback()
+
+class CustomQtEvent(QtCore.QEvent):
+    EVENT_TYPE = QtCore.QEvent.Type(QtCore.QEvent.registerEventType())
+
+    def __init__(self, callback):
+        QtCore.QEvent.__init__(self, CustomQtEvent.EVENT_TYPE)
+        self.callback = callback
+
+class LogWidget(QtGui.QTextEdit):
+    def __init__(self, *args, **kwargs):
+        QtGui.QTextEdit.__init__(self, *args, **kwargs)
+        self.setReadOnly(True)
+
+    def append(self, string):
+        self.insertPlainText(string)
+        scrollbar = self.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+    def sizeHint(self):
+        return QtCore.QSize(640, LOG_HEIGHT)
+
 class OutputScene(QtOpenGL.QGLWidget):
     def __init__(self, entity, application):
         self._entity = entity
