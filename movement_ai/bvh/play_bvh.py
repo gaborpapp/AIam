@@ -54,6 +54,8 @@ class MainWindow(Window):
     def _create_main_menu(self):
         self._main_menu = self._menu_bar.addMenu("&Main")
         self._add_play_stop_action()
+        self._add_skip_action("Long skip backwards", "Shift+Left", -10)
+        self._add_skip_action("Long skip forward", "Shift+Right", 10)
         self._add_show_camera_settings_action()
         self._add_quit_action()
 
@@ -62,7 +64,13 @@ class MainWindow(Window):
         action.triggered.connect(transport.toggle_play)
         action.setShortcut(" ")
         self._main_menu.addAction(action)
-    
+
+    def _add_skip_action(self, text, shortcut, seconds):
+        action = QtGui.QAction(text, self)
+        action.triggered.connect(lambda: transport.skip(seconds))
+        action.setShortcut(shortcut)
+        self._main_menu.addAction(action)
+        
     def _add_show_camera_settings_action(self):
         action = QtGui.QAction('Show camera settings', self)
         action.triggered.connect(self._scene.print_camera_settings)
@@ -152,9 +160,9 @@ class TransportControls:
         button.clicked.connect(transport.stop)
         layout.addWidget(button)
 
-    def _add_skip_button(self, text, shortcut_key, direction_factor, layout):
+    def _add_skip_button(self, text, shortcut_key, seconds, layout):
         def skip():
-            transport.skip(direction_factor)
+            transport.skip(seconds)
             
         button = QtGui.QPushButton(text=text)
         button.clicked.connect(skip)
@@ -421,9 +429,9 @@ class Transport:
             self._time = float(self._frame_index) / self._frame_rate
         self.on_updated()
 
-    def skip(self, direction_factor):
+    def skip(self, seconds):
         self._is_active = True
-        self.set_time(self._time + direction_factor * 1)
+        self.set_time(self._time + seconds)
         self._is_active = False
         
 parser = ArgumentParser()
