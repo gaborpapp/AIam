@@ -41,6 +41,7 @@ class MainWindow(Window):
         self._scene = Scene(bvh_reader, args)
         self._main_layout.addWidget(self._scene)
         transport_controls = TransportControls()
+        transport.on_updated = transport_controls.on_transport_updated
         self._main_layout.addWidget(transport_controls.widget)
         self._create_menu()
         self.setLayout(self._main_layout)
@@ -84,6 +85,8 @@ class TransportControls:
         bottom_layout = QtGui.QHBoxLayout()
         self._add_play_button(bottom_layout)
         self._add_stop_button(bottom_layout)
+        self._add_skip_button("Skip backward", -1, bottom_layout)
+        self._add_skip_button("Skip forward", 1, bottom_layout)
         main_layout.addLayout(bottom_layout)
 
     @property
@@ -99,17 +102,20 @@ class TransportControls:
             return slider
 
         def on_changed_slider_value(slider_value):
-            if not transport.is_playing:
+            if not self._cursor_changing_by_transport:
                 t = int(float(slider_value) / SLIDER_PRECISION * bvh_reader.get_duration())
                 transport.set_time(t)
                 self._update_frame_index_label(transport.frame_index)
                 self._update_time_label(t)
-            
+
+        self._cursor_changing_by_transport = False
         self._cursor_slider = create_slider()
         layout.addWidget(self._cursor_slider)
 
     def on_transport_updated(self):
+        self._cursor_changing_by_transport = True
         self._cursor_slider.setValue(float(transport.time) / bvh_reader.get_duration() * SLIDER_PRECISION)
+        self._cursor_changing_by_transport = False
         self._update_frame_index_label(transport.frame_index)
         self._update_time_label(transport.time)
 
@@ -137,6 +143,14 @@ class TransportControls:
     def _add_stop_button(self, layout):
         button = QtGui.QPushButton(text="Stop")
         button.clicked.connect(transport.stop)
+        layout.addWidget(button)
+
+    def _add_skip_button(self, text, direction_factor, layout):
+        def skip_frames():
+            transport.skip_frames(direction_factor)
+            
+        button = QtGui.QPushButton(text=text)
+        button.clicked.connect(skip_frames)
         layout.addWidget(button)
         
 class Scene(QtOpenGL.QGLWidget):
@@ -260,8 +274,6 @@ class Scene(QtOpenGL.QGLWidget):
             self._draw_unit_cube()
         self._draw_skeleton()
         transport.update()
-        if transport.is_playing:
-            transport_controls.on_transport_updated()
 
     def _draw_skeleton(self):
         global pn_frame_values
@@ -342,7 +354,12 @@ class Transport:
         self._frame_rate = frame_rate
         self._frame_index = 0
         self._time = 0
+        self._is_active = False
         self._is_playing = False
+        self.on_updated()
+
+    def on_updated(self):
+        pass
 
     @property
     def frame_index(self):
@@ -353,8 +370,8 @@ class Transport:
         return self._time
     
     @property
-    def is_playing(self):
-        return self._is_playing
+    def is_active(self):
+        return self._is_active
     
     def rewind(self):
         self.set_time(0)
@@ -365,11 +382,13 @@ class Transport:
 
     def play(self):
         self._is_playing = True
+        self._is_active = True
         self._play_start_time = time.time()
         self._play_time_offset = self._time
 
     def stop(self):
         self._is_playing = False
+        self._is_active = False
 
     def update(self):
         now = time.time()
@@ -383,10 +402,16 @@ class Transport:
                     self.stop()
 
     def _set_frame_index(self, value):
-        self._frame_index = min(value, self._num_frames - 1)
+        self._frame_index = max(0, min(value, self._num_frames - 1))
         if not self._is_playing:
             self._time = float(self._frame_index) / self._frame_rate
+        self.on_updated()
 
+    def skip_frames(self, direction_factor):
+        self._is_active = True
+        self._set_frame_index(self._frame_index + direction_factor * 10)
+        self._is_active = False
+        
 parser = ArgumentParser()
 Window.add_parser_arguments(parser)
 parser.add_argument("-bvh")
@@ -448,6 +473,5 @@ if args.simulate_pn:
 
 app = QtGui.QApplication(sys.argv)
 window = MainWindow(bvh_reader, args)
-transport_controls.on_transport_updated()
 window.show()
 app.exec_()
