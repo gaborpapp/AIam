@@ -487,5 +487,6 @@ if args.simulate_pn:
 
 app = QtGui.QApplication(sys.argv)
 window = MainWindow(bvh_reader, args)
+window.setWindowTitle(args.bvh)
 window.show()
 app.exec_()
