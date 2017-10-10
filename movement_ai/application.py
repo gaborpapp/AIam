@@ -117,7 +117,6 @@ class Application:
             try:
                 for frame in self._pn_receiver.get_frames():
                     self.set_pn_frame(frame)
-                    time.sleep(0.0075)
             except tracking.pn.receiver.RemotePeerShutDown:
                 self.print_and_log("Lost connection to PN!")
                 self.on_pn_connection_status_changed(False)
