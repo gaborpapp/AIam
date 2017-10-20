@@ -75,7 +75,7 @@ class Hybrid(Behavior):
         self._student = student
         self._entity = entity
         self._num_components = num_components
-        self._show_all_feature_matches
+        self._show_all_feature_matches = show_all_feature_matches
         self._parameters = parameters
         parameters.add_listener(self._parameter_changed)
         self._create_flaneur(normalized_observed_reductions)
