@@ -45,7 +45,11 @@ class AutoEncoder(DimensionalityReduction):
         self._merged = tf.summary.merge_all()
         self._train_writer = tf.summary.FileWriter("logs/train", self._sess.graph)
 
+    def get_learning_rate(self):
+        return self._learning_rate
+    
     def set_learning_rate(self, learning_rate):
+        self._learning_rate = learning_rate
         with self._graph.as_default():
             self._train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(
                 self._cost, global_step=self._global_step)

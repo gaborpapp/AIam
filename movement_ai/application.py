@@ -191,7 +191,7 @@ class Application:
         if self._pn_frame is not None:
             self._process_pn_frame(self._pn_frame)
             
-        if self._input is not None and self._student.supports_incremental_learning():
+        if self._input is not None and self._student.supports_incremental_learning() and self._student.get_learning_rate() > 0:
             self._student.train([self._input])
             if self._frame_count % self.args.training_data_interval == 0:
                 self._training_data.append(self._input)

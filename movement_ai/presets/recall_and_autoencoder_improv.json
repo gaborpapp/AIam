@@ -1,1 +1,1 @@
-{"recall_amount": 0.019, "extension": 1.586, "memorize": true, "novelty": 0.797, "learning_rate": 0.00118, "recall_recency_size": 4.98, "recall_recency_bias": 1.0, "input_only": false, "max_angular_step": 0.15, "factor": 7.8580000000000005, "velocity": 4.325, "model": "autoencoder"}
+{"recall_amount": 0.0, "extension": 1.254, "memorize": true, "novelty": 0.588, "learning_rate": 0.0, "recall_recency_size": 4.98, "recall_recency_bias": 1.0, "input_only": false, "max_angular_step": 0.15, "factor": 4.564, "velocity": 2.25, "model": "autoencoder"}
