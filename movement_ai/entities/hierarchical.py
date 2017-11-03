@@ -207,6 +207,16 @@ class Entity(BaseEntity):
         self._enable_friction = self.args.friction
         if hasattr(self.args, "enable_features") and self.args.enable_features:
             self.feature_extractor = FeatureExtractor(self._coordinate_up)
+            self._bvh_joint_name_for_feature = self._get_bvh_joint_names_for_features_from_args()
+
+    def _get_bvh_joint_names_for_features_from_args(self):
+        result = {}
+        for joint_name in self.feature_extractor.INPUT_JOINTS:
+            bvh_joint_name = getattr(self.args, joint_name)
+            if bvh_joint_name is None:
+                raise Exception("please specify BVH joint for %s" % joint_name)
+            result[joint_name] = bvh_joint_name
+        return result
 
     def _create_constrainers(self):
         return Constrainers(
@@ -391,7 +401,7 @@ class Entity(BaseEntity):
 
     def extract_features(self, pose):
         positions = [
-            pose.get_joint(getattr(self.args, joint_name)).worldpos
+            pose.get_joint(self._bvh_joint_name_for_feature[joint_name]).worldpos
             for joint_name in self.feature_extractor.INPUT_JOINTS]
         return self.feature_extractor.extract_features(*positions)
 
