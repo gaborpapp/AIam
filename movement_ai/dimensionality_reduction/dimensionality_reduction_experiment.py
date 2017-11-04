@@ -57,6 +57,8 @@ class DimensionalityReductionExperiment(Experiment):
         parser.add_argument("--target-training-loss", type=float, default=0)
         parser.add_argument("--train-incrementally", action="store_true",
                             help="Use incremental instead of batch training when training offline.")
+        parser.add_argument("--resume-training", action="store_true",
+                            help="When training with -train, use the existing model as a basis, rather than creating a new one.")
         ImproviseParameters().add_parser_arguments(parser)
         FlaneurParameters().add_parser_arguments(parser)
         HybridParameters().add_parser_arguments(parser)
@@ -191,6 +193,8 @@ class DimensionalityReductionExperiment(Experiment):
 
         if self.args.train:
             self._prepare_training_data()
+            if self.args.resume_training:
+                self._load_model()
             self._train_model()
             print "saving %s..." % self._student_model_path
             self.student.save(self._student_model_path)
