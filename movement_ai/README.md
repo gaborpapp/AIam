@@ -49,7 +49,7 @@ saving profiles/dimensionality_reduction/valencia_quaternion_7d_friction_backend
 ok
 ```
 
-After training the model, you can explore how the model generates movement by running the software with interactive application: 
+After training the model, you can explore how the model generates movement by running the software with interactive tool: 
 ```
 python dim_reduce.py -p valencia_quaternion_7d_friction --mode=improvise
 ```
