@@ -25,9 +25,33 @@ ln -s /usr/lib/python2.7/dist-packages/sip* (path-to-your-virtualenv)/lib/python
 ```
 
 ## Validate installation
-When running
+Train a model by running
+```
+python dim_reduce.py -p valencia_quaternion_7d_friction -train
+```
+
+You should see the following output:
+
+```
+loading BVHs from scenes/valencia_kinect/*.bvh...
+ok
+creating training data for 286.8s with 10.0 FPS...
+created training data with 2868 samples
+saving profiles/dimensionality_reduction/valencia_quaternion_7d_friction_backend_only.data...
+ok
+training model...
+ok
+probing model...
+ok
+saving profiles/dimensionality_reduction/valencia_quaternion_7d_friction_backend_only.model...
+ok
+saving profiles/dimensionality_reduction/valencia_quaternion_7d_friction_backend_only.entity.model...
+ok
+```
+
+After training the model, you can explore how the model generates movement by running the software with interactive application: 
 ```
 python dim_reduce.py -p valencia_quaternion_7d_friction --mode=improvise
 ```
 
-you should see a window with a dancing stick figure, and various controls.
+You should now see a window with a dancing stick figure, and various controls.
