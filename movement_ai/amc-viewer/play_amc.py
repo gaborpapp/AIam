@@ -41,7 +41,7 @@ class AsfReader(cgkit.asfamc.ASFReader):
         cgkit.asfamc.ASFReader.__init__(self, *args)
 
     def onRoot(self, root):
-        print root
+        print(root)
     # def onBonedata(self, bones):
     #     print bones
 

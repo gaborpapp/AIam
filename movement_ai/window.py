@@ -197,7 +197,7 @@ class Window:
             self.calculate_and_show_fps()
 
     def calculate_and_show_fps(self):
-        print sum(self.fps_history) / len(self.fps_history)
+        print(sum(self.fps_history) / len(self.fps_history))
         self.previous_shown_fps_time = self.now
 
     def keyPressed(self, key, x, y):
@@ -243,7 +243,7 @@ class Window:
         parser.add_argument("-top", type=int)
         parser.add_argument("-fullscreen", action="store_true")
         parser.add_argument('-show-fps', dest='show_fps', action='store_true')
-        parser.add_argument("--text-renderer", choices=TEXT_RENDERERS.keys(), default="glut")
+        parser.add_argument("--text-renderer", choices=list(TEXT_RENDERERS.keys()), default="glut")
         parser.add_argument("--font", type=str)
 
     def add_frame(self, frame):
@@ -282,5 +282,5 @@ class Frame:
         pass
 
 def run(visualizer_class, args):
-    print "Hit ESC key to quit."
+    print("Hit ESC key to quit.")
     visualizer_class(args).run()

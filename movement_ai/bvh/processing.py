@@ -1,6 +1,6 @@
 import math
 from transformations import euler_matrix, euler_from_matrix
-from bvh import JointDefinition
+from .bvh import JointDefinition
 
 AXIS_TO_CHANNEL = {
     "x": "Xrotation",

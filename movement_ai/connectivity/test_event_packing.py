@@ -3,7 +3,7 @@ import numpy
 
 import sys
 sys.path.insert(0, ".")
-from event_packing import EventPacker
+from .event_packing import EventPacker
 from event import Event
 
 class EventPackerTestCase(unittest.TestCase):
@@ -23,11 +23,11 @@ class EventPackerTestCase(unittest.TestCase):
         content = numpy.array([1.0, 1.5])
         event = Event("some type", content)
         unpacked_event = EventPacker.unpack(EventPacker.pack(event))
-        self.assertEquals(numpy.ndarray, unpacked_event.content.__class__)
+        self.assertEqual(numpy.ndarray, unpacked_event.content.__class__)
         numpy.testing.assert_array_equal(
             event.content,
             unpacked_event.content)
 
     def _test_roundtrip(self, content):
         event = Event("some type", content)
-        self.assertEquals(event, EventPacker.unpack(EventPacker.pack(event)))
+        self.assertEqual(event, EventPacker.unpack(EventPacker.pack(event)))

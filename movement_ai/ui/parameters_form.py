@@ -1,5 +1,5 @@
-from PyQt4 import QtCore, QtGui
-from control_layout import ControlLayout
+from PyQt5 import QtCore, QtWidgets
+from .control_layout import ControlLayout
 from parameters import *
 
 SLIDER_PRECISION = 1000
@@ -18,7 +18,7 @@ class ParametersForm:
             self._field_widgets[parameter.name] = field_widget
             self._control_layout.add_label(parameter.name)
             if isinstance(field_widget, Slider):
-                value_widget = QtGui.QLabel()
+                value_widget = QtWidgets.QLabel()
                 value_widget.setFixedWidth(30)
                 self._control_layout.add_control_widgets([field_widget, value_widget])
                 self._value_widgets[parameter.name] = value_widget
@@ -57,11 +57,11 @@ class ParametersForm:
             value_widget = self._value_widgets[parameter.name]
             value_widget.setText("%.2f" % parameter.value())
 
-class Slider(QtGui.QSlider):
+class Slider(QtWidgets.QSlider):
     def __init__(self, form, parameter):
         self._form = form
         self._parameter = parameter
-        QtGui.QSlider.__init__(self, QtCore.Qt.Horizontal)
+        QtWidgets.QSlider.__init__(self, QtCore.Qt.Horizontal)
         self.setRange(0, SLIDER_PRECISION)
         self.setSingleStep(1)
         self.sliderMoved.connect(lambda value: self._slider_value_changed(parameter, value))
@@ -82,10 +82,10 @@ class Slider(QtGui.QSlider):
     def update_to_reflect_value(self):
         self.setValue(self._parameter_value_to_slider_value(self._parameter))
 
-class ListChoice(QtGui.QComboBox):
+class ListChoice(QtWidgets.QComboBox):
     def __init__(self, parameter):
         self._parameter = parameter
-        QtGui.QComboBox.__init__(self)
+        QtWidgets.QComboBox.__init__(self)
         for value in parameter.choices:
             self.addItem(value)
         self.activated.connect(
@@ -102,10 +102,10 @@ class ListChoice(QtGui.QComboBox):
                 return
             index += 1
 
-class LineEdit(QtGui.QLineEdit):
+class LineEdit(QtWidgets.QLineEdit):
     def __init__(self, parameter):
         self._parameter = parameter
-        QtGui.QLineEdit.__init__(self)
+        QtWidgets.QLineEdit.__init__(self)
         self.textEdited.connect(lambda value: self._edited_text_parameter(parameter, value))
 
     def _edited_text_parameter(self, parameter, string):

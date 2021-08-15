@@ -1,15 +1,15 @@
-from dimensionality_reduction_ui import *
+from .dimensionality_reduction_ui import *
 from event import merge_event_handler_dicts
 
 SPLIT_SENSITIVITY = .2
 
-class MapTab(ReductionTab, QtGui.QWidget):
+class MapTab(ReductionTab, QtWidgets.QWidget):
     def __init__(self, parent, dimensions, normalized_observed_reductions):
         ReductionTab.__init__(self, parent)
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self.student = parent.parent().student
         self._dimensions = dimensions
-        self._map_layout = QtGui.QVBoxLayout()
+        self._map_layout = QtWidgets.QVBoxLayout()
         self._add_map_dimension_checkboxes()
         self._add_map_widget(normalized_observed_reductions)
         self._map_layout.addStretch(1)
@@ -37,10 +37,10 @@ class MapTab(ReductionTab, QtGui.QWidget):
         self._map_layout.addWidget(self._map_widget)
 
     def _add_map_dimension_checkboxes(self):
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         self._map_dimension_checkboxes = []
         for n in range(self.student.num_reduced_dimensions):
-            checkbox = QtGui.QCheckBox()
+            checkbox = QtWidgets.QCheckBox()
             if n in self._dimensions:
                 checkbox.setCheckState(QtCore.Qt.Checked)
             checkbox.stateChanged.connect(self._updated_dimensions)
@@ -49,9 +49,7 @@ class MapTab(ReductionTab, QtGui.QWidget):
         self._map_layout.addLayout(layout)
 
     def _updated_dimensions(self):
-        checked_dimensions = filter(
-            lambda n: self._map_dimension_checkboxes[n].checkState() == QtCore.Qt.Checked,
-            range(self.student.num_reduced_dimensions))
+        checked_dimensions = [n for n in range(self.student.num_reduced_dimensions) if self._map_dimension_checkboxes[n].checkState() == QtCore.Qt.Checked]
         if len(checked_dimensions) == 2:
             self._map_widget.updated_dimensions(checked_dimensions)
             self._map_widget.set_reduction(self._reduction)
@@ -86,7 +84,7 @@ class MapWidget(QtOpenGL.QGLWidget):
     def get_event_handlers(self):
         return merge_event_handler_dicts([
                 renderer.get_event_handlers()
-                for renderer in self._mode_specific_renderers.values()])
+                for renderer in list(self._mode_specific_renderers.values())])
 
     def updated_dimensions(self, dimensions):
         self.set_dimensions(dimensions)

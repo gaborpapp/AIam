@@ -50,7 +50,7 @@ class Display(window.Window):
         glPopMatrix()
 
     def _draw_states_as_points(self):
-        for state in state_machine.states.values():
+        for state in list(state_machine.states.values()):
             glPointSize(self._state_point_size(state))
             glBegin(GL_POINTS)
             # if state == observed_state:
@@ -70,7 +70,7 @@ class Display(window.Window):
             return MIN_STATE_POINT_SIZE
 
     def _draw_state_names(self):
-        for state in state_machine.states.values():
+        for state in list(state_machine.states.values()):
             if state == observed_state:
                 glColor3f(*OBSERVED_STATE_COLOR)
             else:

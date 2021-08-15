@@ -1,4 +1,4 @@
-import cPickle
+import pickle
 from argparse import ArgumentParser
 from vector import Vector3d
 import math
@@ -20,7 +20,7 @@ def process_log_entry(path, values):
 f = open(args.log_source, "r")
 try:
     while True:
-        (t, path, args) = cPickle.load(f)
+        (t, path, args) = pickle.load(f)
         process_log_entry(path, args)
 except EOFError:
     pass
@@ -69,15 +69,15 @@ while speed > 0.1:
                measure_error(tracker_pitch + comparison["pitch"] * speed,
                              tracker_y_position + comparison["y"] * speed))
               for comparison in comparisons]
-    best_comparison, min_error = min(errors, key=lambda (comparison, error): error)
+    best_comparison, min_error = min(errors, key=lambda comparison_error: comparison_error[1])
     if lowest_error is not None and min_error > lowest_error:
-        print "slowing down"
+        print("slowing down")
         speed /= 2
     else:
-        print "error: %.3f  tracker: %.3f,%.3f" % (
-            min_error, -tracker_y_position, -math.degrees(tracker_pitch))
+        print("error: %.3f  tracker: %.3f,%.3f" % (
+            min_error, -tracker_y_position, -math.degrees(tracker_pitch)))
         tracker_pitch += best_comparison["pitch"] * speed
         tracker_y_position += best_comparison["y"] * speed
         lowest_error = min_error
 
-print "finished calibration"
+print("finished calibration")

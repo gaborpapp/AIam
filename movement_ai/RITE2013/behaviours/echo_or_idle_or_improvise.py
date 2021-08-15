@@ -21,7 +21,7 @@ class Behaviour(behaviour.Behaviour):
         self.motion_controller.initiate_movement_to(InState(self.MC))
 
     def _state_observed(self, state):
-        print "observed %r" % state
+        print("observed %r" % state)
         self._observed_state = state
 
     def process_input(self, input_position, time_increment):
@@ -29,13 +29,13 @@ class Behaviour(behaviour.Behaviour):
         if self.motion_controller.get_mode() == motion_controller.IDLE:
             if self._in_sync():
                 if ENABLE_SWAYING:
-                    print "swaying"
+                    print("swaying")
                     self._idle()
             elif self._can_echo():
-                print "echoing"
+                print("echoing")
                 self._echo()
             else:
-                print "improvising"
+                print("improvising")
                 self._initiate_random_movement()
 
     def _in_sync(self):

@@ -2,7 +2,7 @@ import time
 import collections
 from argparse import ArgumentParser
 from PyQt4 import QtGui
-import cPickle
+import pickle
 import threading
 import math
 import numpy
@@ -216,7 +216,7 @@ class User:
 
     def _save_bvh(self):
         filename = "user%02d.bvh" % self._user_id
-        print "saving %s" % filename
+        print("saving %s" % filename)
         self._bvh_writer.write(filename)
 
     def get_root_vertical_orientation(self):
@@ -232,7 +232,7 @@ class UserMovementInterpreter:
         self.active_area_center_x, self.active_area_center_z = [
             float(s) for s in args.active_area_center.split(",")]
         self.active_area_radius = args.active_area_radius
-        self.tracker_y_position, tracker_pitch = map(float, args.tracker.split(","))
+        self.tracker_y_position, tracker_pitch = list(map(float, args.tracker.split(",")))
         self.set_tracker_pitch(tracker_pitch)
         self._reset()
 
@@ -310,17 +310,17 @@ class UserMovementInterpreter:
             math.radians(self._tracker_pitch), [1, 0, 0])
 
     def _read_log(self, filename):
-        print "reading log file %s..." % filename
+        print("reading log file %s..." % filename)
         f = open(filename, "r")
         self._log_entries = []
         try:
             while True:
-                entry = cPickle.load(f)
+                entry = pickle.load(f)
                 self._log_entries.append(entry)
         except EOFError:
             pass
         f.close()
-        print "ok"
+        print("ok")
 
     def _handle_begin_frame(self, path, values, types, src, user_data):
         (timestamp,) = values
@@ -424,11 +424,11 @@ class UserMovementInterpreter:
                 (self.intensity_ceiling - INTENSITY_THRESHOLD)
 
     def get_users(self):
-        return [user for user in self._users.values()
+        return [user for user in list(self._users.values())
                 if user.has_complete_joint_data()]
 
     def _log_frame(self):
-        self._log_target_file.write(cPickle.dumps(self._frame))
+        self._log_target_file.write(pickle.dumps(self._frame))
 
     def process_log_in_new_thread(self):
         thread = threading.Thread(name="process_log", target=self._process_log)
@@ -439,9 +439,9 @@ class UserMovementInterpreter:
         log_entry_index = 0
         while not self._tearing_down:
             if log_entry_index == len(self._log_entries):
-                print "finished processing log"
+                print("finished processing log")
                 if args.auto_restart_log:
-                    print "restarting log processing"
+                    print("restarting log processing")
                     log_entry_index = 0
                     self._current_log_time = None
                     self._reset()
@@ -463,7 +463,7 @@ class UserMovementInterpreter:
             self._current_log_time += sleep_duration * self.log_replay_speed
 
     def tear_down(self):
-        for user in self._users.values():
+        for user in list(self._users.values()):
             user.tear_down()
         self._tearing_down = True
 

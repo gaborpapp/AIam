@@ -445,7 +445,7 @@ class Entity(BaseEntity):
         try:
             result = list(interpolator.interpolate(rotation_params1, rotation_params2, amount))
         except ZeroNormedQuaternion as exception:
-            print "WARNING: %s (joint: %s)" % (exception, joint.definition.name)
+            print("WARNING: %s (joint: %s)" % (exception, joint.definition.name))
             result = rotation_params1
         return result, parameter_index
 
@@ -488,5 +488,5 @@ class Entity(BaseEntity):
         
     def set_max_angular_step(self, max_angular_step):
         self._max_angular_step = max_angular_step
-        for interpolator in self._rotation_interpolators.values():
+        for interpolator in list(self._rotation_interpolators.values()):
             interpolator.set_max_angular_step(max_angular_step)

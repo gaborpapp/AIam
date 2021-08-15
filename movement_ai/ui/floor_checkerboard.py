@@ -1,6 +1,6 @@
 from OpenGL.GL import *
 import math
-from shader import Shader
+from .shader import Shader
 
 RESOLUTION = 15
 

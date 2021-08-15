@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtOpenGL
+from PyQt5 import QtCore, QtOpenGL
 import math
 import numpy
 
@@ -22,12 +22,12 @@ class Scene(QtOpenGL.QGLWidget):
         self.setMouseTracking(True)
 
     def _set_camera_from_arg(self, arg):
-        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, arg.split(","))
+        pos_x, pos_y, pos_z, orient_y, orient_z = list(map(float, arg.split(",")))
         self._set_camera_position([pos_x, pos_y, pos_z])
         self._set_camera_orientation(orient_y, orient_z)
 
     def set_default_camera_orientation(self):
-        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, self.args.camera.split(","))
+        pos_x, pos_y, pos_z, orient_y, orient_z = list(map(float, self.args.camera.split(",")))
         self._set_camera_orientation(orient_y, orient_z)
 
     def resizeGL(self, window_width, window_height):
@@ -107,11 +107,11 @@ class Scene(QtOpenGL.QGLWidget):
         self._drag_y_previous = y
 
     def print_camera_settings(self):
-        print "%.3f,%.3f,%.3f,%.3f,%.3f" % (
+        print("%.3f,%.3f,%.3f,%.3f,%.3f" % (
             self._camera_position[0],
             self._camera_position[1],
             self._camera_position[2],
-            self._camera_y_orientation, self._camera_x_orientation)
+            self._camera_y_orientation, self._camera_x_orientation))
 
     def _set_camera_position(self, position):
         self._camera_position = position

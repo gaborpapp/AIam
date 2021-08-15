@@ -15,7 +15,7 @@ class MidiInterpreter:
         message, deltatime = event
         command, channel, value = message
         if self._calibrate:
-            print "command=%s channel=%s" % (command, channel)
+            print("command=%s channel=%s" % (command, channel))
         if command == self._tracked_command and channel == self._tracked_channel:
             self._process_value(value)
 
@@ -24,7 +24,7 @@ class MidiInterpreter:
         self._output_controller.send_user_intensity(relative_intensity)
         
     def main_loop(self):
-        print "press ctrl-c to exit"
+        print("press ctrl-c to exit")
         try:
             while True:
                 time.sleep(1)

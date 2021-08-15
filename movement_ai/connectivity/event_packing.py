@@ -13,14 +13,14 @@ class EventPacker:
 
     @classmethod
     def _serialize(cls, obj):
-        if obj is None or isinstance(obj, (bool, int, long, float, basestring)):
+        if obj is None or isinstance(obj, (bool, int, float, str)):
             return obj
         if isinstance(obj, list):
             return [cls._serialize(val) for val in obj]
         if isinstance(obj, dict):
             return {"py/dict": dict(
                     (k, cls._serialize(v))
-                    for k, v in obj.iteritems()
+                    for k, v in obj.items()
                     )}
         if isinstance(obj, numpy.ndarray):
             return {

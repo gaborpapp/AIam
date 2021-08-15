@@ -1,4 +1,4 @@
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtWidgets, QtCore
 
 SLIDER_PRECISION = 1000
 
@@ -8,11 +8,11 @@ class SliderControl:
         self._min_value = float(min_value)
         self._max_value = float(max_value)
         self._range = max_value - min_value
-        self._value_widget = QtGui.QLabel()
+        self._value_widget = QtWidgets.QLabel()
         self._value_widget.setFixedWidth(60)
         
         def create_slider():
-            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
             slider.setRange(0, SLIDER_PRECISION)
             slider.setSingleStep(1)
             slider.setValue(self._value_to_slider_value(default_value))
@@ -63,7 +63,7 @@ class CheckboxControl:
     def __init__(self, label, default_value, on_changed_value):
         self._label = label
         self._on_changed_value = on_changed_value
-        self._checkbox = QtGui.QCheckBox()
+        self._checkbox = QtWidgets.QCheckBox()
         self._checkbox.setChecked(default_value)
         self._checkbox.stateChanged.connect(lambda: self._state_changed())
 
@@ -87,7 +87,7 @@ class CheckboxControl:
     
 class ControlLayout:
     def __init__(self):
-        self._layout = QtGui.QGridLayout()
+        self._layout = QtWidgets.QGridLayout()
         self._row = 0
 
     @property
@@ -95,7 +95,7 @@ class ControlLayout:
         return self._layout
     
     def add_label(self, string):
-        label = QtGui.QLabel(string)
+        label = QtWidgets.QLabel(string)
         self._layout.addWidget(label, self._row, 0)
 
     def add_control_widget(self, widget):

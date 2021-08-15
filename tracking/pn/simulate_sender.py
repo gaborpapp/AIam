@@ -1,6 +1,6 @@
-from receiver import SERVER_PORT_BVH
+from .receiver import SERVER_PORT_BVH
 import argparse
-import SocketServer
+import socketserver
 import time
 import re
 
@@ -34,7 +34,7 @@ def get_frames_from_bvh_file(filename):
             frame = "mock_ID mock_name %s||\n" % line
             frames.append(frame)
     
-class PnSimulatorHandler(SocketServer.BaseRequestHandler):
+class PnSimulatorHandler(socketserver.BaseRequestHandler):
     def handle(self):
         sending_start_time = time.time()
         num_frames_sent = 0
@@ -83,11 +83,11 @@ else:
 bvh_frame_time = bvh_frame_time / args.speed
 sending_frame_time = 1. / args.frame_rate
 
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
 server = ThreadedTCPServer(("localhost", args.port), PnSimulatorHandler)
 server.allow_reuse_address = True
-print "OK serving"
+print("OK serving")
 start_time = time.time()
 server.serve_forever()

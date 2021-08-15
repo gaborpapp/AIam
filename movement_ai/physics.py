@@ -43,7 +43,7 @@ class BalanceDetector:
 
     def _lowest_vertex(self, vertices):
         return min(
-            range(len(vertices)),
+            list(range(len(vertices))),
             key=lambda index: vertices[index][self._coordinate_up])
         
 class FloorConstrainer:

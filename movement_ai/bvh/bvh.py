@@ -9,7 +9,7 @@ import numpy
 from transformations import euler_matrix, euler_from_matrix
 
 import math
-from geo import Euler, make_translation_matrix, edge
+from .geo import Euler, make_translation_matrix, edge
 
 class JointDefinition:
     def __init__(self, name, index, is_end, channels=[]):
@@ -329,8 +329,8 @@ class Hierarchy:
         self._pretty_print_recurse(self._root_joint_definition)
 
     def _pretty_print_recurse(self, joint_definition, indent=0):
-        print "%sname=%r channels=%r offset=%r" % (
-            indent * "  ", joint_definition.name, joint_definition.channels, joint_definition.offset)
+        print("%sname=%r channels=%r offset=%r" % (
+            indent * "  ", joint_definition.name, joint_definition.channels, joint_definition.offset))
         for child_definition in joint_definition.child_definitions:
             self._pretty_print_recurse(child_definition, indent+1)
 
@@ -424,7 +424,7 @@ class ScaleInfo:
 
     def update_scale_factor(self):
         if self.max_pose_size == 0:
-            print "Warning: max_pose_size==0. Setting scale_factor to 1."
+            print("Warning: max_pose_size==0. Setting scale_factor to 1.")
             self.scale_factor = 1
         else:
             self.scale_factor = self.max_pose_size

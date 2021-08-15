@@ -107,7 +107,7 @@ class JointAnglePlotter:
 
     def _print_unique_angles_results(self):
         for output in self.outputs:
-            print "%s %s" % (len(output["unique_angles"]), output["joint"].name)
+            print("%s %s" % (len(output["unique_angles"]), output["joint"].name))
 
 parser = ArgumentParser()
 JointAnglePlotter.add_parser_arguments(parser)

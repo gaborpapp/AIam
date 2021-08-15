@@ -182,7 +182,7 @@ class Application:
                time.time() - self._previous_frame_time >= self._desired_frame_duration:
                 self.update()
         except Exception as exception:
-            print "EXCEPTION:", exception
+            print("EXCEPTION:", exception)
             self._logger.error(exception, exc_info=True)
 
     def update(self):
@@ -266,7 +266,7 @@ class Application:
 
     def print_and_log(self, message):
         timestamped_message = "%s %s" % (time.strftime("%Y-%d-%m %H:%M:%S"), message)
-        print timestamped_message
+        print(timestamped_message)
         self._ui_window.append_to_log_widget(timestamped_message + "\n")
         self._logger.info(message)
 
@@ -276,19 +276,19 @@ class Application:
             self._avatars[0].entity.bvh_reader.get_hierarchy(), self._desired_frame_duration)
         self._recording_frame_index = 0
         self._is_recording = True
-        print "Started recording"
+        print("Started recording")
 
     def stop_recording(self):
         self._logger.debug("stop_recording()")
         path = "recordings/%s.bvh" % time.strftime("%Y_%d_%m_%H%M%S")
         self._logger.debug("recording path: %s" % path)
         self._is_recording = False
-        print "Stopped recording"
+        print("Stopped recording")
 
         def save_recording():
-            print "Writing %s ..." % path
+            print("Writing %s ..." % path)
             self._bvh_writer.write(path)
-            print "Finished writing %s" % path
+            print("Finished writing %s" % path)
 
         thread = threading.Thread(target=save_recording)
         thread.start()
@@ -331,7 +331,7 @@ class Memory:
         return self._frames[index]
 
     def _warn_and_log(self, message):
-        print "WARNING: %s" % message
+        print("WARNING: %s" % message)
         self._logger.warn(message)
         
     def create_random_recall(self, num_frames_to_recall,
@@ -710,7 +710,7 @@ class OutputScene(QtOpenGL.QGLWidget):
              "Zrotation": math.degrees(joint.angles[self._z_rotation_index])})
         
     def _set_camera_from_arg(self, arg):
-        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, arg.split(","))
+        pos_x, pos_y, pos_z, orient_y, orient_z = list(map(float, arg.split(",")))
         self._set_camera_position([pos_x, pos_y, pos_z])
         self._set_camera_orientation(orient_y, orient_z)
 
@@ -859,11 +859,11 @@ class OutputScene(QtOpenGL.QGLWidget):
         self._drag_y_previous = y
 
     def print_camera_settings(self):
-        print "%.3f,%.3f,%.3f,%.3f,%.3f" % (
+        print("%.3f,%.3f,%.3f,%.3f,%.3f" % (
             self._camera_position[0],
             self._camera_position[1],
             self._camera_position[2],
-            self._camera_y_orientation, self._camera_x_orientation)
+            self._camera_y_orientation, self._camera_x_orientation))
         
 def set_up_logging():
     logging.basicConfig(

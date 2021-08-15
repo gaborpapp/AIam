@@ -1,7 +1,7 @@
 import ws4py.client.threadedclient
-from websocket_server import WEBSOCKET_PORT, WEBSOCKET_APPLICATION
+from .websocket_server import WEBSOCKET_PORT, WEBSOCKET_APPLICATION
 from event import Event
-from event_packing import EventPacker
+from .event_packing import EventPacker
 import contextlib
 from tornado.stack_context import StackContext
 import time
@@ -13,11 +13,11 @@ class WebsocketClient(ws4py.client.threadedclient.WebSocketClient):
         self._event_listener = self
 
     def opened(self):
-        print "connected to server"
+        print("connected to server")
         self.send_event(Event(Event.SUBSCRIBE, self._event_listener.get_handled_events()))
 
     def closed(self, code, reason=None):
-        print "connection to server was closed (code=%r reason=%r)" % (code, reason)
+        print("connection to server was closed (code=%r reason=%r)" % (code, reason))
 
     def connect(self):
         try:
@@ -26,7 +26,7 @@ class WebsocketClient(ws4py.client.threadedclient.WebSocketClient):
             self.close()
         except:            
             time.sleep(2)
-            print "connection failed - attempting reconnect"
+            print("connection failed - attempting reconnect")
             self.connect()
 
     @contextlib.contextmanager
@@ -34,7 +34,7 @@ class WebsocketClient(ws4py.client.threadedclient.WebSocketClient):
         try:
             yield
         except Exception as exception:
-            print "received_message failed: %s" % exception
+            print("received_message failed: %s" % exception)
 
     def received_message(self, message):
         with StackContext(self._print_exception):
@@ -49,7 +49,7 @@ class WebsocketClient(ws4py.client.threadedclient.WebSocketClient):
         try:
             self.send(packed_event)
         except:
-            print "send_event failed - attempting reconnect"
+            print("send_event failed - attempting reconnect")
             ws4py.client.threadedclient.WebSocketClient.__init__(self, self.url)
             self.connect()
 

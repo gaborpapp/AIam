@@ -67,7 +67,7 @@ class DistanceDistributionEqualizationSampler(Sampler):
 
     def sample(self):
         self._knn = sklearn.neighbors.KNeighborsClassifier(n_neighbors=2)
-        indices = range(len(self._observations))
+        indices = list(range(len(self._observations)))
         self._knn.fit(self._observations, indices)
         indices_sorted_by_nearest_neighbor_distance = sorted(
             indices,
@@ -95,7 +95,7 @@ class MinDistanceSampler(Sampler):
     def sample(self):
         knn = sklearn.neighbors.KNeighborsClassifier(
             n_neighbors=int(len(self._observations) * self._args.num_neighbors_ratio))
-        indices = range(len(self._observations))
+        indices = list(range(len(self._observations)))
         knn.fit(self._observations, indices)
         dropped_indices = set()
         for index, observation in zip(indices, self._observations):

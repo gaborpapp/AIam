@@ -1,4 +1,4 @@
-from cuboid_scene import CuboidScene
+from .cuboid_scene import CuboidScene
 from ui.ui import *
 from expmap import *
 

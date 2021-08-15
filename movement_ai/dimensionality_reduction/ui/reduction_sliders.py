@@ -1,10 +1,10 @@
-from dimensionality_reduction_ui import *
+from .dimensionality_reduction_ui import *
 
-class ReductionSliders(ReductionTab, QtGui.QWidget):
+class ReductionSliders(ReductionTab, QtWidgets.QWidget):
     def __init__(self, parent):
         ReductionTab.__init__(self, parent)
-        QtGui.QWidget.__init__(self)
-        self._layout = QtGui.QVBoxLayout()
+        QtWidgets.QWidget.__init__(self)
+        self._layout = QtWidgets.QVBoxLayout()
         self._add_sliders()
         self._layout.addStretch(1)
         self.setLayout(self._layout)
@@ -23,7 +23,7 @@ class ReductionSliders(ReductionTab, QtGui.QWidget):
     def _add_sliders(self):
         self._sliders = []
         for n in range(self._parent.get_num_reduced_dimensions()):
-            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
             slider.setRange(0, SLIDER_PRECISION)
             slider.setSingleStep(1)
             slider.setValue(self._normalized_reduction_value_to_slider_value(n, 0.5))

@@ -1,4 +1,4 @@
-from dimensionality_reduction import DimensionalityReduction
+from .dimensionality_reduction import DimensionalityReduction
 import numpy as np
 import tensorflow as tf
 import math
@@ -73,8 +73,8 @@ class AutoEncoder(DimensionalityReduction):
                     if num_training_epochs is not None and epoch >= num_training_epochs:
                         break
                     if target_training_loss and loss <= target_training_loss:
-                        print "Stopping at epoch %d (loss %s <= %s)" % (
-                            epoch, loss, target_training_loss)
+                        print("Stopping at epoch %d (loss %s <= %s)" % (
+                            epoch, loss, target_training_loss))
                         break
                     if target_loss_slope:
                         if previous_loss is not None:
@@ -83,13 +83,13 @@ class AutoEncoder(DimensionalityReduction):
                             if len(loss_slope_history) == 10:
                                 mean_loss_slope = sum(loss_slope_history) / len(loss_slope_history)
                                 if 0 <= mean_loss_slope <= target_loss_slope:
-                                    print "Stopping at epoch %d (loss slope: 0 <= %s <= %s)" % (
-                                        epoch, mean_loss_slope, target_loss_slope)
+                                    print("Stopping at epoch %d (loss slope: 0 <= %s <= %s)" % (
+                                        epoch, mean_loss_slope, target_loss_slope))
                                     break
                         previous_loss = loss
                     epoch += 1
             except KeyboardInterrupt:
-                print "Training stopped at epoch %d" % epoch
+                print("Training stopped at epoch %d" % epoch)
 
     def train(self, training_data, return_loss=False):
         with self._graph.as_default():

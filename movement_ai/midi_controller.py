@@ -42,7 +42,7 @@ class MidiController:
         command, channel, value = message
         command_comma_channel = "%s,%s" % (command, channel)
         if self._args.calibrate:
-            print command_comma_channel
+            print(command_comma_channel)
         if command_comma_channel in self._parameter_lookup_table:
             parameter = self._parameter_lookup_table[command_comma_channel]
             self._process_value(parameter, value)
@@ -57,7 +57,7 @@ class MidiController:
                    "value": parameter_value}))
                 
     def main_loop(self):
-        print "press ctrl-c to exit"
+        print("press ctrl-c to exit")
         try:
             while True:
                 time.sleep(1)

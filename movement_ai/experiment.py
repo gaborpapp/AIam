@@ -225,9 +225,9 @@ class Experiment(EventListener):
             
         if args.receive_from_pn:
             self._pn_receiver = tracking.pn.receiver.PnReceiver()
-            print "connecting to PN server..."
+            print("connecting to PN server...")
             self._pn_receiver.connect(args.pn_host, args.pn_port)
-            print "ok"
+            print("ok")
             pn_pose = self.bvh_reader.get_hierarchy().create_pose()
             self._pn_entity = self.entity_class(self.bvh_reader, pn_pose, self.args.floor, self.args.z_up, self.args)
             self._input_from_pn = None
@@ -256,23 +256,23 @@ class Experiment(EventListener):
         bvh_filenames = glob.glob(pattern)
         if len(bvh_filenames) == 0:
             raise Exception("no files found matching the pattern %s" % pattern)
-        print "loading BVHs from %s..." % pattern
+        print("loading BVHs from %s..." % pattern)
         bvh_reader = BvhCollection(bvh_filenames)
         bvh_reader.read(read_frames=read_frames)
-        print "ok"
+        print("ok")
         return bvh_reader
         
     def _save_student(self, event):
         filename = event.content
-        print "saving %s..." % filename
+        print("saving %s..." % filename)
         self.student.save(filename)
-        print "ok"
+        print("ok")
 
     def _load_student(self, event):
         filename = event.content
-        print "loading %s..." % filename
+        print("loading %s..." % filename)
         self.student.load(filename)
-        print "ok"
+        print("ok")
 
     def set_friction(self, enabled, inform_ui=False):
         if enabled != self._enable_friction:
@@ -309,11 +309,11 @@ class Experiment(EventListener):
 
     def run_backend_and_or_ui(self):
         if self.args.start_frame is not None:
-            print "fast-forwarding to frame %d..." % self.args.start_frame
+            print("fast-forwarding to frame %d..." % self.args.start_frame)
             self.time_increment = 1. / self.args.frame_rate
             for n in range(self.args.start_frame):
                 self._proceed_and_update()
-            print "ok"
+            print("ok")
         else:
             self.entity.update(self.input)
             self.update()
@@ -443,13 +443,13 @@ class Experiment(EventListener):
 
     def _create_websocket_server(self):
         server = WebsocketServer(WebsocketUiHandler, {"experiment": self})
-        print "websocket server ready"
+        print("websocket server ready")
         self._invoke_potential_launcher_in_args()
         return server
 
     def _invoke_potential_launcher_in_args(self):
         if self.args.launch_when_ready:
-            print "launching %r" % self.args.launch_when_ready
+            print("launching %r" % self.args.launch_when_ready)
             self._launched_process = subprocess.Popen(self.args.launch_when_ready, shell=True)
 
     def _set_up_timed_refresh(self):
@@ -462,14 +462,14 @@ class Experiment(EventListener):
         server_thread.start()
 
     def _start_export_bvh(self, event):
-        print "exporting BVH"
+        print("exporting BVH")
         self._exporting_output = True
 
     def _stop_export_bvh(self, event):
         if not os.path.exists(self.args.export_dir):
             os.mkdir(self.args.export_dir)
         export_path = self._get_export_path()
-        print "saving export to %s" % export_path
+        print("saving export to %s" % export_path)
         self.bvh_writer.write(export_path)
         self._exporting_output = False
 
@@ -513,16 +513,16 @@ class SingleProcessUiHandler:
                       
 class WebsocketUiHandler(ClientHandler):
     def __init__(self, *args, **kwargs):
-        print "UI connected"
+        print("UI connected")
         self._experiment = kwargs.pop("experiment")
         super(WebsocketUiHandler, self).__init__(*args, **kwargs)
 
     def registered(self):
-        print "UI registered"
+        print("UI registered")
         self._experiment.ui_connected(self)
 
     def on_close(self):
-        print "UI disconnected"
+        print("UI disconnected")
         super(WebsocketUiHandler, self).on_close()
         self._experiment.ui_disconnected(self)
 

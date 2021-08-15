@@ -13,8 +13,8 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/..")
 from bvh import bvh_reader as bvh_reader_module
 from connectivity.simple_osc_receiver import OscReceiver
-from floor_checkerboard import FloorCheckerboard
-from ui.window import Window
+from .floor_checkerboard import FloorCheckerboard
+from .ui.window import Window
 
 FLOOR_ARGS = {"num_cells": 26, "size": 26,
               "board_color1": (.2, .2, .2, 1),
@@ -177,7 +177,7 @@ class Scene(QtOpenGL.QGLWidget):
              "Zrotation": math.degrees(angles[self._z_rotation_index])})
              
     def _set_camera_from_arg(self, arg):
-        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, arg.split(","))
+        pos_x, pos_y, pos_z, orient_y, orient_z = list(map(float, arg.split(",")))
         self._set_camera_position([pos_x, pos_y, pos_z])
         self._set_camera_orientation(orient_y, orient_z)
 
@@ -277,7 +277,7 @@ class Scene(QtOpenGL.QGLWidget):
             self._floor.render(0, 0, camera_x, camera_z)
         if self.view_origin:
             self._render_origin()
-        for avatar in self._avatars.values():
+        for avatar in list(self._avatars.values()):
             if avatar.is_renderable:
                 self._render_avatar(avatar)
 
@@ -349,11 +349,11 @@ class Scene(QtOpenGL.QGLWidget):
         self._drag_y_previous = y
 
     def print_camera_settings(self):
-        print "%.3f,%.3f,%.3f,%.3f,%.3f" % (
+        print("%.3f,%.3f,%.3f,%.3f,%.3f" % (
             self._camera_position[0],
             self._camera_position[1],
             self._camera_position[2],
-            self._camera_y_orientation, self._camera_x_orientation)
+            self._camera_y_orientation, self._camera_x_orientation))
         
 parser = ArgumentParser()
 Window.add_parser_arguments(parser)

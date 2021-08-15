@@ -1,8 +1,8 @@
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtWidgets
 
-class Window(QtGui.QWidget):
+class Window(QtWidgets.QWidget):
     def __init__(self, args):
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)
         self._args = args
         self._fullscreen_display = args.fullscreen
 
@@ -18,7 +18,7 @@ class Window(QtGui.QWidget):
         self.setCursor(QtCore.Qt.BlankCursor)
         self.showFullScreen()
         if self._args.fullscreen_display is not None:
-            geometry = QtGui.QApplication.desktop().screenGeometry(
+            geometry = QtWidgets.QApplication.desktop().screenGeometry(
                 self._fullscreen_display);
             self.move(QtCore.QPoint(geometry.x(), geometry.y()));
             self.resize(geometry.width(), geometry.height());

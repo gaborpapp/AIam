@@ -1,22 +1,22 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt5 import QtCore, QtWidgets, QtOpenGL
 import math
 import numpy
 from parameters import *
 from event import Event
 from event_listener import EventListener
-from parameters_form import ParametersForm
-from color_schemes import *
-from exporter import Exporter
-from scene import Scene
-from window import Window
-from floor_grid import FloorGrid
-from floor_spots import FloorSpots
-from floor_checkerboard import FloorCheckerboard
+from .parameters_form import ParametersForm
+from .color_schemes import *
+from .exporter import Exporter
+from .scene import Scene
+from .window import Window
+from .floor_grid import FloorGrid
+from .floor_spots import FloorSpots
+from .floor_checkerboard import FloorCheckerboard
 from text_renderer import GlutTextRenderer
-from control_layout import ControlLayout
+from .control_layout import ControlLayout
 import shutil
 
 TOOLBAR_HEIGHT = 350
@@ -63,7 +63,7 @@ class BvhScene(Scene):
                        camera_drag_speed=CAMERA_DRAG_SPEED)
         self.frame_count = None
         if args.image:
-            self._image = QtGui.QImage(args.image)
+            self._image = QtWidgets.QImage(args.image)
         self._exporting_video = False
         if self.view_floor:
             self._floor = None
@@ -245,13 +245,13 @@ class BvhScene(Scene):
         os.mkdir(VIDEO_EXPORT_PATH)
         self._exporter = Exporter(VIDEO_EXPORT_PATH, 0, 0, self.width, self.height)
         self._exporting_video = True
-        print "exporting video to %s" % VIDEO_EXPORT_PATH
+        print("exporting video to %s" % VIDEO_EXPORT_PATH)
         self._parent.send_event(Event(Event.STOP))
         self._parent.send_event(Event(Event.PROCEED_TO_NEXT_FRAME))
 
     def stop_export_video(self):
         self._exporting_video = False
-        print "stopped exporting video"
+        print("stopped exporting video")
 
     def bvh_vertex(self, v):
         glVertex3f(
@@ -262,7 +262,7 @@ class BvhScene(Scene):
     def get_root_vertical_orientation(self):
         pass
 
-class ExperimentToolbar(QtGui.QWidget):
+class ExperimentToolbar(QtWidgets.QWidget):
     def __init__(self, parent, args):
         self.args = args
         QtOpenGL.QGLWidget.__init__(self, parent)
@@ -278,9 +278,9 @@ class ExperimentToolbar(QtGui.QWidget):
 
     def add_input_tab_widget(self, parent):
         if self.args.enable_follow or self.args.receive_from_pn:
-            input_tab_widget = QtGui.QTabWidget()
-            input_tab = QtGui.QWidget()
-            layout = QtGui.QVBoxLayout()
+            input_tab_widget = QtWidgets.QTabWidget()
+            input_tab = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout()
             layout.setSpacing(0)
             layout.setMargin(0)
             input_tab.setLayout(layout)
@@ -305,9 +305,9 @@ class ExperimentToolbar(QtGui.QWidget):
         
     def add_entity_tab_widget(self, parent):
         if self.args.entity == "hierarchical":
-            entity_tab_widget = QtGui.QTabWidget()
-            entity_tab = QtGui.QWidget()
-            layout = QtGui.QVBoxLayout()
+            entity_tab_widget = QtWidgets.QTabWidget()
+            entity_tab = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout()
             entity_tab.setLayout(layout)
             control_layout = ControlLayout()
             self._add_hierarchical_parameters(control_layout)
@@ -327,7 +327,7 @@ class ExperimentToolbar(QtGui.QWidget):
             control_layout.add_control_widget(self._max_angular_step_slider)
 
     def _create_enable_friction_checkbox(self):
-        checkbox = QtGui.QCheckBox()
+        checkbox = QtWidgets.QCheckBox()
         checkbox.setEnabled(not self.args.enable_io_blending)
         checkbox.setChecked(self.args.friction)
         checkbox.stateChanged.connect(self._enable_friction_checkbox_changed)
@@ -338,7 +338,7 @@ class ExperimentToolbar(QtGui.QWidget):
                                        self.enable_friction_checkbox.isChecked()))
         
     def _create_max_angular_step_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         slider.setRange(0, SLIDER_PRECISION)
         slider.setSingleStep(1)
         slider.setValue(self.args.max_angular_step * SLIDER_PRECISION)
@@ -351,9 +351,9 @@ class ExperimentToolbar(QtGui.QWidget):
 
     def add_learning_tab_widget(self, parent):
         if self.parent().student.supports_incremental_learning():
-            learning_tab_widget = QtGui.QTabWidget()
-            learning_tab = QtGui.QWidget()
-            layout = QtGui.QVBoxLayout()
+            learning_tab_widget = QtWidgets.QTabWidget()
+            learning_tab = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout()
             layout.setSpacing(0)
             layout.setMargin(0)
             learning_tab.setLayout(layout)
@@ -375,9 +375,9 @@ class ExperimentToolbar(QtGui.QWidget):
             learning_params.add_listener(self._send_changed_learning_param)
             learning_params_form = self.add_parameter_fields(learning_params, layout)
 
-            loss_layout = QtGui.QHBoxLayout()
-            loss_label = QtGui.QLabel("Loss")
-            self.training_loss_value = QtGui.QLabel("")
+            loss_layout = QtWidgets.QHBoxLayout()
+            loss_label = QtWidgets.QLabel("Loss")
+            self.training_loss_value = QtWidgets.QLabel("")
             loss_layout.addWidget(loss_label)
             loss_layout.addWidget(self.training_loss_value)
             layout.addLayout(loss_layout)
@@ -412,7 +412,7 @@ class MainWindow(Window, EventListener):
         parser.add_argument("--ui-event-log-target")
         parser.add_argument("--ui-event-log-source")
         parser.add_argument("--floor-renderer",
-                            choices=FLOOR_RENDERERS.keys())
+                            choices=list(FLOOR_RENDERERS.keys()))
 
     def __init__(self, client, entity, student, bvh_reader, scene_widget_class, toolbar_class, args,
                  event_handlers={}):
@@ -434,15 +434,15 @@ class MainWindow(Window, EventListener):
         event_handlers.update(self.toolbar.get_event_handlers())
         EventListener.__init__(self, handlers=event_handlers)
 
-        self.outer_vertical_layout = QtGui.QVBoxLayout()
+        self.outer_vertical_layout = QtWidgets.QVBoxLayout()
         self.outer_vertical_layout.setSpacing(0)
-        self.outer_vertical_layout.setMargin(0)
+        #self.outer_vertical_layout.setMargin(0)
         self.outer_vertical_layout.setContentsMargins(0, 0, 0, 0)
 
-        inner_vertical_layout = QtGui.QVBoxLayout()
+        inner_vertical_layout = QtWidgets.QVBoxLayout()
 
-        size_policy = QtGui.QSizePolicy(
-            QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        size_policy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         size_policy.setVerticalStretch(2)
         size_policy.setHorizontalStretch(2)
 
@@ -466,7 +466,7 @@ class MainWindow(Window, EventListener):
 
         self._update_timer = QtCore.QTimer(self)
         self._update_timer.setInterval(1000. / FRAME_RATE)
-        QtCore.QObject.connect(self._update_timer, QtCore.SIGNAL('timeout()'), self.update_qgl_widgets)
+        self._update_timer.timeout.connect(self.update_qgl_widgets)
         self._update_timer.start()
 
         if args.fixed_size:
@@ -492,13 +492,13 @@ class MainWindow(Window, EventListener):
 
     def received_event(self, event):
         callback = lambda: self.handle_event(event)
-        QtGui.QApplication.postEvent(self, CustomQtEvent(callback))
+        QtWidgets.QApplication.postEvent(self, CustomQtEvent(callback))
 
     def sizeHint(self):
         return QtCore.QSize(self.args.preferred_width, self.args.preferred_height)
 
     def _create_menu(self):
-        self._menu_bar = QtGui.QMenuBar()
+        self._menu_bar = QtWidgets.QMenuBar()
         self.outer_vertical_layout.setMenuBar(self._menu_bar)
         self._create_main_menu()
         self._create_view_menu()
@@ -534,13 +534,13 @@ class MainWindow(Window, EventListener):
                                enable_title, enable_handler,
                                disable_title, disable_handler,
                                default, shortcut):
-        enable_action = QtGui.QAction(enable_title, self)
+        enable_action = QtWidgets.QAction(enable_title, self)
         enable_action.setShortcut(shortcut)
         enable_action.triggered.connect(lambda: self._enable(enable_handler, enable_action, disable_action))
         enable_action.setEnabled(not default)
         self._main_menu.addAction(enable_action)
 
-        disable_action = QtGui.QAction(disable_title, self)
+        disable_action = QtWidgets.QAction(disable_title, self)
         disable_action.setShortcut(shortcut)
         disable_action.triggered.connect(lambda: self._disable(disable_handler, enable_action, disable_action))
         disable_action.setEnabled(default)
@@ -557,7 +557,7 @@ class MainWindow(Window, EventListener):
         handler()
 
     def _add_next_frame_action(self):
-        action = QtGui.QAction("Next frame", self)
+        action = QtWidgets.QAction("Next frame", self)
         action.setShortcut("n")
         action.triggered.connect(self._proceed_to_next_frame)
         self._main_menu.addAction(action)
@@ -566,33 +566,33 @@ class MainWindow(Window, EventListener):
         self.send_event(Event(Event.PROCEED_TO_NEXT_FRAME))
         
     def _add_show_camera_settings_action(self):
-        action = QtGui.QAction('Show camera settings', self)
+        action = QtWidgets.QAction('Show camera settings', self)
         action.triggered.connect(self._scene.print_camera_settings)
         self._main_menu.addAction(action)
         
     def _add_quit_action(self):
-        action = QtGui.QAction("&Quit", self)
-        action.triggered.connect(QtGui.QApplication.exit)
+        action = QtWidgets.QAction("&Quit", self)
+        action.triggered.connect(QtWidgets.QApplication.exit)
         self._main_menu.addAction(action)
 
     def _add_save_student_action(self):
-        action = QtGui.QAction("Save model...", self)
+        action = QtWidgets.QAction("Save model...", self)
         action.setShortcut('Ctrl+S')
         action.triggered.connect(self._save_student)
         self._main_menu.addAction(action)
 
     def _save_student(self):
-        filename = QtGui.QFileDialog.getSaveFileName(self, "Save model", filter="Model (*.model)")
+        filename = QtWidgets.QFileDialog.getSaveFileName(self, "Save model", filter="Model (*.model)")
         self.send_event(Event(Event.SAVE_STUDENT, str(filename)))
 
     def _add_load_student_action(self):
-        action = QtGui.QAction("Load model...", self)
+        action = QtWidgets.QAction("Load model...", self)
         action.setShortcut('Ctrl+O')
         action.triggered.connect(self._load_student)
         self._main_menu.addAction(action)
 
     def _load_student(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self, "Load model", filter="Model (*.model)")
+        filename = QtWidgets.QFileDialog.getOpenFileName(self, "Load model", filter="Model (*.model)")
         self.send_event(Event(Event.LOAD_STUDENT, str(filename)))
 
     def _create_view_menu(self):
@@ -609,7 +609,7 @@ class MainWindow(Window, EventListener):
             self._add_orientation_action()
 
     def _add_toolbar_action(self):
-        self._toolbar_action = QtGui.QAction('Toolbar', self)
+        self._toolbar_action = QtWidgets.QAction('Toolbar', self)
         self._toolbar_action.setCheckable(True)
         self._toolbar_action.setChecked(not self.args.no_toolbar)
         self._toolbar_action.setShortcut('Ctrl+T')
@@ -629,7 +629,7 @@ class MainWindow(Window, EventListener):
         self.toolbar.setFixedSize(self.args.preferred_width, 0)
 
     def _add_fullscreen_action(self):
-        self._fullscreen_action = QtGui.QAction('Fullscreen', self)
+        self._fullscreen_action = QtWidgets.QAction('Fullscreen', self)
         self._fullscreen_action.setCheckable(True)
         self._fullscreen_action.setShortcut('Ctrl+Return')
         self._fullscreen_action.toggled.connect(self._toggled_fullscreen)
@@ -642,7 +642,7 @@ class MainWindow(Window, EventListener):
             self.leave_fullscreen()
 
     def _add_origin_action(self):
-        self._origin_action = QtGui.QAction('Origin', self)
+        self._origin_action = QtWidgets.QAction('Origin', self)
         self._origin_action.setCheckable(True)
         self._origin_action.setShortcut('Shift+o')
         self._origin_action.toggled.connect(self._toggled_origin)
@@ -652,7 +652,7 @@ class MainWindow(Window, EventListener):
         self._scene.view_origin = self._origin_action.isChecked()
 
     def _add_follow_output_action(self):
-        self._follow_action = QtGui.QAction('&Follow output', self)
+        self._follow_action = QtWidgets.QAction('&Follow output', self)
         self._follow_action.setCheckable(True)
         self._follow_action.setChecked(True)
         self._follow_action.setShortcut('Ctrl+F')
@@ -667,13 +667,13 @@ class MainWindow(Window, EventListener):
         return self._follow_action.isChecked()
 
     def _add_assumed_focus_action(self):
-        self.focus_action = QtGui.QAction("Assumed focus", self)
+        self.focus_action = QtWidgets.QAction("Assumed focus", self)
         self.focus_action.setCheckable(True)
         self.focus_action.setShortcut('Ctrl+G')
         self._view_menu.addAction(self.focus_action)
 
     def _add_floor_action(self):
-        self._floor_action = QtGui.QAction("Floor", self)
+        self._floor_action = QtWidgets.QAction("Floor", self)
         self._floor_action.setCheckable(True)
         self._floor_action.setChecked(self._scene.view_floor)
         self._floor_action.setShortcut("f")
@@ -684,7 +684,7 @@ class MainWindow(Window, EventListener):
         self._scene.view_floor = self._floor_action.isChecked()
 
     def _add_input_action(self):
-        self._input_action = QtGui.QAction("Input", self)
+        self._input_action = QtWidgets.QAction("Input", self)
         self._input_action.setCheckable(True)
         self._input_action.setChecked(self._scene.view_input)
         self._input_action.setShortcut("i")
@@ -695,7 +695,7 @@ class MainWindow(Window, EventListener):
         self._scene.view_input = self._input_action.isChecked()
 
     def _add_frame_count_action(self):
-        self._frame_count_action = QtGui.QAction("Frame count", self)
+        self._frame_count_action = QtWidgets.QAction("Frame count", self)
         self._frame_count_action.setCheckable(True)
         self._frame_count_action.setChecked(self._scene.view_frame_count)
         self._frame_count_action.setShortcut("c")
@@ -706,18 +706,18 @@ class MainWindow(Window, EventListener):
         self._scene.view_frame_count = self._frame_count_action.isChecked()
 
     def _add_orientation_action(self):
-        self.orientation_action = QtGui.QAction("Orientation", self)
+        self.orientation_action = QtWidgets.QAction("Orientation", self)
         self.orientation_action.setCheckable(True)
         self.orientation_action.setShortcut("o")
         self._view_menu.addAction(self.orientation_action)
 
     def _create_color_scheme_menu(self):
         menu = self._menu_bar.addMenu("Color scheme")
-        action_group = QtGui.QActionGroup(self, exclusive=True)
+        action_group = QtWidgets.QActionGroup(self)
         self._color_scheme_menu_actions = {}
         index = 1
-        for name, scheme in color_schemes.iteritems():
-            action = QtGui.QAction(name, action_group)
+        for name, scheme in color_schemes.items():
+            action = QtWidgets.QAction(name, action_group)
             action.setData(name)
             action.setCheckable(True)
             action.setShortcut(str(index))
@@ -744,7 +744,7 @@ class MainWindow(Window, EventListener):
                 self._fullscreen_action.toggle()
         else:            
             self._scene.keyPressEvent(event)
-            QtGui.QWidget.keyPressEvent(self, event)
+            QtWidgets.QWidget.keyPressEvent(self, event)
 
     def customEvent(self, custom_qt_event):
         custom_qt_event.callback()

@@ -109,8 +109,8 @@ class MainWindow(QtOpenGL.QGLWidget):
         self._render_input(input_from_pn)
         
         glColor3f(1,1,1)
-        for grid_y in xrange(args.grid_resolution):
-            for grid_x in xrange(args.grid_resolution):
+        for grid_y in range(args.grid_resolution):
+            for grid_x in range(args.grid_resolution):
                 self._render_cell(grid_x, grid_y)
 
     def _render_input(self, input_):
@@ -197,9 +197,9 @@ def receive_from_pn(pn_entity):
         input_from_pn = pn_entity.get_value_from_frame(frame)
                 
 pn_receiver = tracking.pn.receiver.PnReceiver()
-print "connecting to PN server..."
+print("connecting to PN server...")
 pn_receiver.connect(args.pn_host, args.pn_port)
-print "ok"
+print("ok")
 pn_pose = bvh_reader.get_hierarchy().create_pose()
 pn_entity = Entity(bvh_reader, pn_pose, FLOOR, Z_UP, entity_args)
 pn_receiver_thread = threading.Thread(target=lambda: receive_from_pn(pn_entity))

@@ -1,4 +1,4 @@
-from cuboid_scene import CuboidScene
+from .cuboid_scene import CuboidScene
 from ui.ui import *
 from transformations import euler_from_quaternion
 import math

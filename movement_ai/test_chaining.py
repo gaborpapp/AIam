@@ -69,7 +69,7 @@ class ChainingTestCase(unittest.TestCase):
             self._chainer.get()
             
     def then_result_is(self, expected_result):
-        self.assertEquals(
+        self.assertEqual(
             self._sequence_as_list(expected_result),
             self._sequence_as_list(self._actual_result))
 

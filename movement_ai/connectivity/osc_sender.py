@@ -1,5 +1,5 @@
 import liblo
-import cPickle
+import pickle
 import time
 import threading
 
@@ -20,4 +20,4 @@ class OscSender:
             liblo.send(self.address, *args)
         if self.log:
             t = time.time() - self.start_time
-            self.log.write(cPickle.dumps((t, args)))
+            self.log.write(pickle.dumps((t, args)))

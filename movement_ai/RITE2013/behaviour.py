@@ -26,9 +26,9 @@ class Behaviour:
 
     def set_mode(self, module):
         if self._mode != module:
-            print "-> %s" % module.__name__
+            print("-> %s" % module.__name__)
             self._mode = module
             self._sub_behaviour = self._sub_behaviours[module]
-            for sub_behaviour in self._sub_behaviours.values():
+            for sub_behaviour in list(self._sub_behaviours.values()):
                 sub_behaviour.enabled = (sub_behaviour == self._sub_behaviour)
             self._sub_behaviour.on_enabled()

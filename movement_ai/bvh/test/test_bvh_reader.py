@@ -22,7 +22,7 @@ class JointDefinitionTestCase(unittest.TestCase):
 
     def _assert_same_content_but_other_instance_recurse(self, joint_definition1, joint_definition2):
         self.assertFalse(joint_definition1 is joint_definition2)
-        self.assertEquals(joint_definition1.name, joint_definition2.name)
+        self.assertEqual(joint_definition1.name, joint_definition2.name)
         for child_definition1, child_definition2 in zip(joint_definition1.child_definitions,
                                                         joint_definition2.child_definitions):
             self._assert_same_content_but_other_instance_recurse(

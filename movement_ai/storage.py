@@ -1,16 +1,16 @@
-import cPickle
+import pickle
 
 def save(data, filename):
-    print "saving %s..." % filename
-    f = open(filename, "w")
-    cPickle.dump(data, f)
+    print("saving %s..." % filename)
+    f = open(filename, "wb")
+    pickle.dump(data, f)
     f.close()
-    print "ok"
+    print("ok")
 
 def load(filename):
-    print "loading %s..." % filename
-    f = open(filename)
-    data = cPickle.load(f)
+    print("loading %s..." % filename)
+    f = open(filename, "rb")
+    data = pickle.load(f)
     f.close()
-    print "ok"
+    print("ok")
     return data

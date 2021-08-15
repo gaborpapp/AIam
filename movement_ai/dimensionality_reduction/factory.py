@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
-import pca
-from autoencoder import AutoEncoder
+from . import pca
+from .autoencoder import AutoEncoder
 
 class DimensionalityReductionFactory:
     TYPES = ["LinearPCA", "KernelPCA", "AutoEncoder"]

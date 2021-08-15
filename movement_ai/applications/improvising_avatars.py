@@ -75,9 +75,9 @@ def receive_from_pn(pn_entity):
         application.set_input(input_from_pn)
         
 pn_receiver = tracking.pn.receiver.PnReceiver()
-print "connecting to PN server..."
+print("connecting to PN server...")
 pn_receiver.connect(args.pn_host, args.pn_port)
-print "ok"
+print("ok")
 pn_pose = bvh_reader.get_hierarchy().create_pose()
 pn_entity = Entity(bvh_reader, pn_pose, FLOOR, Z_UP, entity_args)
 pn_receiver_thread = threading.Thread(target=lambda: receive_from_pn(pn_entity))

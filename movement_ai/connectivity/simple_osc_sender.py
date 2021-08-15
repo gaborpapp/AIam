@@ -1,7 +1,7 @@
 import threading
 import socket
 import struct
-import osc
+from . import osc
 import logging
 
 class OscSender:

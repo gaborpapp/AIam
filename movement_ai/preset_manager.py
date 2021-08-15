@@ -16,12 +16,12 @@ class PresetManager:
 
     def save(self, path):
         name_value_dict = dict((parameter.name, parameter.get_value())
-                               for parameter in self._parameters.values())
+                               for parameter in list(self._parameters.values()))
         with open(path, "w") as f:
             json.dump(name_value_dict, f)
 
     def load(self, path):
         with open(path, "r") as f:
             name_value_dict = json.load(f)
-        for name, value in name_value_dict.iteritems():
+        for name, value in name_value_dict.items():
             self._parameters[name].set_value(value)

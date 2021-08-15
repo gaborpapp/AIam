@@ -18,7 +18,7 @@ def save_config(config, name):
     f.write('center = %r\n' % config.center.v)
     f.write('size = %r\n' % config.size.v)
     f.write('states = {\n')
-    for state_name in state_machine.states.keys():
+    for state_name in list(state_machine.states.keys()):
         f.write('  %r: %r,\n' % (state_name, config.states[state_name]))
     f.write('}\n')
     f.close()

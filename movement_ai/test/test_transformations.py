@@ -14,11 +14,11 @@ class TransformationsTestCase(unittest.TestCase):
         angles = (4*math.pi) * (numpy.random.random(3) - 0.5)
         successes = []
         failures = []
-        for axes in transformations._AXES2TUPLE.keys():
+        for axes in list(transformations._AXES2TUPLE.keys()):
             R0 = transformations.euler_matrix(axes=axes, *angles)
             R1 = transformations.euler_matrix(axes=axes, *transformations.euler_from_matrix(R0, axes))
             if numpy.allclose(R0, R1):
                 successes.append(axes)
             else:
                 failures.append(axes)
-        self.assertEquals(0, len(failures), "Failed for:\n%sand succeeded for:\n%s" % (failures, successes))
+        self.assertEqual(0, len(failures), "Failed for:\n%sand succeeded for:\n%s" % (failures, successes))

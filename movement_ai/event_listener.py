@@ -1,5 +1,5 @@
 import time
-import cPickle
+import pickle
 import os
 import threading
 
@@ -15,11 +15,11 @@ class EventListener:
             handler = self._handlers[event.type]
         except KeyError:
             raise Exception("Unknown event type %r. Handlers added for %r." % (
-                    event.type, self._handlers.keys()))
+                    event.type, list(self._handlers.keys())))
         handler(event)
 
     def get_handled_events(self):
-        return self._handlers.keys()
+        return list(self._handlers.keys())
 
     def set_event_log_target(self, filename):
         self._writing_events_to_log = True
@@ -32,7 +32,7 @@ class EventListener:
 
     def _serialize(self, obj):
         try:
-            return cPickle.dumps(obj)
+            return pickle.dumps(obj)
         except Exception as exception:
             raise Exception("failed to serialize %s: %s" % (obj, exception))
 
@@ -42,7 +42,7 @@ class EventListener:
         self._current_event_log_time = None
 
     def _read_event_log(self, filename):
-        print "reading event log file %s..." % filename
+        print("reading event log file %s..." % filename)
         f = open(filename, "r")
         self._event_log_entries = []
         try:
@@ -52,10 +52,10 @@ class EventListener:
         except EOFError:
             pass
         f.close()
-        print "ok"
+        print("ok")
 
     def _unserialize_from_file(self, f):
-        return cPickle.load(f)
+        return pickle.load(f)
 
     def process_event_log_in_new_thread(self):
         thread = threading.Thread(name="process_log", target=self._process_event_log)
@@ -65,7 +65,7 @@ class EventListener:
     def _process_event_log(self):
         while True:
             if len(self._event_log_entries) == 0:
-                print "finished processing log"
+                print("finished processing log")
                 return
             t, event = self._event_log_entries.pop(0)
             if self._current_event_log_time is None:

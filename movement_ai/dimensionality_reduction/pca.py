@@ -1,6 +1,6 @@
-from dimensionality_reduction import DimensionalityReduction
+from .dimensionality_reduction import DimensionalityReduction
 import sklearn.decomposition
-import cPickle
+import pickle
 
 class PCADimensionalityReduction(DimensionalityReduction):
     def fit(self, *args, **kwargs):
@@ -16,13 +16,13 @@ class PCADimensionalityReduction(DimensionalityReduction):
         return self.pca.inverse_transform(*args, **kwargs)
         
     def save_model(self, path):
-        f = open(path, "w")
-        cPickle.dump(self.pca, f)
+        f = open(path, "wb")
+        pickle.dump(self.pca, f)
         f.close()
 
     def load_model(self, path):
-        f = open(path)
-        self.pca = cPickle.load(f)
+        f = open(path, "rb")
+        self.pca = pickle.load(f)
         f.close()
         
 class LinearPCA(PCADimensionalityReduction):
@@ -31,8 +31,8 @@ class LinearPCA(PCADimensionalityReduction):
         self.pca = sklearn.decomposition.PCA(n_components=num_reduced_dimensions)
 
     def analyze_accuracy(self, observations):
-        print "explained variance ratio: %s (sum %s)" % (
-            self.pca.explained_variance_ratio_, sum(self.pca.explained_variance_ratio_))
+        print("explained variance ratio: %s (sum %s)" % (
+            self.pca.explained_variance_ratio_, sum(self.pca.explained_variance_ratio_)))
         DimensionalityReduction.analyze_accuracy(self, observations)
 
 class KernelPCA(PCADimensionalityReduction):

@@ -20,7 +20,8 @@ class OscReceiver(liblo.Server):
         liblo.Server.add_method(self, path, typespec, self._callback,
                                 (callback_func, user_data))
 
-    def _callback(self, path, args, types, src, (callback_func, user_data)):
+    def _callback(self, path, args, types, src, xxx_todo_changeme):
+        (callback_func, user_data) = xxx_todo_changeme
         with self._lock:
             self._queue.append((path, args, types, src, callback_func, user_data))
 

@@ -1,4 +1,4 @@
-import osc
+from . import osc
 import socket
 import threading
 import struct
@@ -36,7 +36,7 @@ class OscReceiver:
         if proto == osc.TCP:
             self._socket.listen(5)
         self.port = self._socket.getsockname()[1]
-        print "listening at %s:%s" % (hostname, self.port)
+        print("listening at %s:%s" % (hostname, self.port))
         self._queue = []
         self._lock = threading.Lock()
 

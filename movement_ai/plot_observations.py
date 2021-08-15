@@ -64,14 +64,14 @@ class ObservationsPlotter:
         generator.generate(segments)
         out.close()
 
-        print "Plotted %d observations in %d segments to file %s" % (
+        print("Plotted %d observations in %d segments to file %s" % (
             sum([len(segment) for segment in segments]),
-            len(segments), output_filename)
+            len(segments), output_filename))
 
     def _load_observations_from_file(self):
         result = []
         for line in open(self._args.observations_from_file).readlines():
-            observation = map(float, line.split(" "))
+            observation = list(map(float, line.split(" ")))
             result.append(observation)
         return result
 
@@ -99,7 +99,7 @@ class ObservationsPlotter:
 
     def _track_joint_worldpos(self, bvh_reader):
         path = [self._get_worldpos(bvh_reader, n)
-                for n in xrange(bvh_reader.get_num_frames())]
+                for n in range(bvh_reader.get_num_frames())]
         path = self._normalize_vertices(path)
         return path
 
@@ -140,7 +140,7 @@ class ObservationsPlotter:
         try:
             return interpolation.interpolate(segment, self._args.interpolation_resolution)
         except interpolation.InterpolationException as exception:
-            print "WARNING: interpolation failed: %s" % exception
+            print("WARNING: interpolation failed: %s" % exception)
             return segment
 
 class Generator:
@@ -149,7 +149,7 @@ class Generator:
         self._args = args
 
     def _write(self, string):
-        print >>self._out, string
+        print(string, file=self._out)
 
 class gnuplotGenerator(Generator):
     DEFAULT_FILENAME = "observations.dat"
@@ -157,15 +157,15 @@ class gnuplotGenerator(Generator):
     def generate(self, segments):
         for observations in segments:
             for observation in observations:
-                print >>self._out, " ".join([str(value) for value in observation])
-            print >>self._out
+                print(" ".join([str(value) for value in observation]), file=self._out)
+            print(file=self._out)
 
         if self._args.segments_output:
             n = 0
             for segment in segments:
                 out = open(self._args.segments_output % n, "w")
                 for observation in segment:
-                    print >>out, " ".join([str(value) for value in observation])
+                    print(" ".join([str(value) for value in observation]), file=out)
                 out.close()
                 n += 1
 

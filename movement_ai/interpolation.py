@@ -29,7 +29,7 @@ def _clamp_path(unclamped_interpolated_path, uninterpolated_path):
     return unclamped_interpolated_path[index_nearest_start:index_nearest_end]
 
 def _nearest_index(iterable, target):
-    return min(range(len(iterable)),
+    return min(list(range(len(iterable))),
                key=lambda i: _distance(iterable[i], target))
 
 def _distance(a, b):

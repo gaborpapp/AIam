@@ -76,7 +76,7 @@ def merge_event_handler_dicts(event_handler_dicts):
 def _get_all_event_types(event_handler_dicts):
     result = set()
     for event_handler_dict in event_handler_dicts:
-        result.update(event_handler_dict.keys())
+        result.update(list(event_handler_dict.keys()))
     return result
 
 def _get_merged_event_handlers_for_type(event_handler_dicts, event_type):

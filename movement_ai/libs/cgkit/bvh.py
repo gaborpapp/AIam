@@ -91,7 +91,7 @@ class BVHReader:
     def read(self, read_frames=True):
         """Read the entire file.
         """
-        self.fhandle = file(self.filename)
+        self.fhandle = open(self.filename)
 
         self.readHierarchy()
         self.onHierarchy(self._root)
@@ -136,7 +136,7 @@ class BVHReader:
                 a = s.split()
                 if len(a)!=self._numchannels:
                     raise SyntaxError("Syntax error in line %d: %d float values expected, got %d instead"%(self.linenr, self._numchannels, len(a)))
-                values = map(lambda x: float(x), a)
+                values = [float(x) for x in a]
                 self.onFrame(values)
 
     # readHierarchy

@@ -5,7 +5,7 @@ import math
 import input_generator
 from utils import random_unit_sphere_position
 
-PAUSE, SWAY_OUT, SWAY_IN = range(3)
+PAUSE, SWAY_OUT, SWAY_IN = list(range(3))
 
 class Generator(input_generator.Generator):
     @staticmethod

@@ -20,7 +20,7 @@ class Flaneur:
 
     def set_map_points(self, map_points):
         self.map_points = map_points
-        self._nearest_neighbor_classifier.fit(map_points, range(len(map_points)))
+        self._nearest_neighbor_classifier.fit(map_points, list(range(len(map_points))))
         
     def reset(self):
         self._position = numpy.random.random(size=self._n_dimensions)

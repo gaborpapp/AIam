@@ -2,14 +2,14 @@
 
 import math
 import time
-from bvh_collection import BvhCollection
+from .bvh_collection import BvhCollection
 from argparse import ArgumentParser
 from PyQt4 import QtCore, QtGui, QtOpenGL
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import glob
-import SocketServer
+import socketserver
 import threading
 
 import sys
@@ -189,7 +189,7 @@ class Scene(QtOpenGL.QGLWidget):
         timer.start()
              
     def _set_camera_from_arg(self, arg):
-        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, arg.split(","))
+        pos_x, pos_y, pos_z, orient_y, orient_z = list(map(float, arg.split(",")))
         self._set_camera_position([pos_x, pos_y, pos_z])
         self._set_camera_orientation(orient_y, orient_z)
 
@@ -357,11 +357,11 @@ class Scene(QtOpenGL.QGLWidget):
         self._drag_y_previous = y
 
     def print_camera_settings(self):
-        print "%.3f,%.3f,%.3f,%.3f,%.3f" % (
+        print("%.3f,%.3f,%.3f,%.3f,%.3f" % (
             self._camera_position[0],
             self._camera_position[1],
             self._camera_position[2],
-            self._camera_y_orientation, self._camera_x_orientation)
+            self._camera_y_orientation, self._camera_x_orientation))
 
 class Transport:
     def __init__(self, num_frames, duration, frame_rate):
@@ -460,7 +460,7 @@ transport = Transport(
     frame_rate)
 
 if args.simulate_pn:
-    class PnSimulatorHandler(SocketServer.BaseRequestHandler):
+    class PnSimulatorHandler(socketserver.BaseRequestHandler):
         def handle(self):
             global pn_frame_values
 
@@ -483,7 +483,7 @@ if args.simulate_pn:
 
                 num_frames_sent += 1
 
-    class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         pass
 
     pn_frame = None

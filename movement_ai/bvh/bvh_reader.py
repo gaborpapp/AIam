@@ -6,10 +6,10 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/../libs")
 
 import cgkit.bvh
 import os
-import cPickle
+import pickle
 from collections import defaultdict
-from bvh import Hierarchy, ScaleInfo, JointDefinition
-from geo import make_translation_matrix
+from .bvh import Hierarchy, ScaleInfo, JointDefinition
+from .geo import make_translation_matrix
 from numpy import array
 
 CHANNEL_TO_AXIS = {
@@ -36,19 +36,19 @@ class BvhReader(cgkit.bvh.BVHReader):
     def _load_from_cache(self):
         cache_filename = self._cache_filename()
         # print "loading BVH cache from %s ..." % cache_filename
-        f = open(cache_filename)
+        f = open(cache_filename, 'rb')
         self._scale_info = ScaleInfo()
-        self._scale_info.__dict__ = cPickle.load(f)
-        self._unique_rotations = cPickle.load(f)
+        self._scale_info.__dict__ = pickle.load(f)
+        self._unique_rotations = pickle.load(f)
         f.close()
         # print "ok"
 
     def _save_to_cache(self):
         cache_filename = self._cache_filename()
         # print "saving BVH cache to %s ..." % cache_filename
-        f = open(cache_filename, "w")
-        cPickle.dump(self._scale_info.__dict__, f)
-        cPickle.dump(self._unique_rotations, f)
+        f = open(cache_filename, "wb")
+        pickle.dump(self._scale_info.__dict__, f)
+        pickle.dump(self._unique_rotations, f)
         f.close()
         # print "ok"
 
@@ -85,9 +85,7 @@ class BvhReader(cgkit.bvh.BVHReader):
             node.offset[2])
 
         if "Xrotation" in node.channels:
-            joint_definition.rotation_channels = filter(
-                lambda channel: channel in ["Xrotation", "Yrotation", "Zrotation"],
-                node.channels)
+            joint_definition.rotation_channels = [channel for channel in node.channels if channel in ["Xrotation", "Yrotation", "Zrotation"]]
             joint_definition.axes = "r" + "".join([
                     CHANNEL_TO_AXIS[channel] for channel in joint_definition.rotation_channels])
             joint_definition.rotation_index = self._create_rotation_index(joint_definition.rotation_channels)
@@ -174,7 +172,7 @@ class BvhReader(cgkit.bvh.BVHReader):
         self.frames.append(values)
 
     def _probe_vertex_range(self):
-        print "probing BVH vertex range..."
+        print("probing BVH vertex range...")
         self._scale_info = ScaleInfo()
         pose = self.hierarchy.create_pose()
         for n in range(self._num_frames):
@@ -184,18 +182,18 @@ class BvhReader(cgkit.bvh.BVHReader):
                 self._scale_info.update_with_vector(*vertex[0:3])
             self._scale_info.update_max_pose_size(vertices)
         self._scale_info.update_scale_factor()
-        print "ok"
+        print("ok")
 
     def _probe_static_rotations(self):
         self._unique_rotations = defaultdict(set)
         if self._num_frames > 1:
-            print "probing static rotations..."
+            print("probing static rotations...")
             pose = self.hierarchy.create_pose()
             for n in range(self._num_frames):
                 self.hierarchy.set_pose_from_frame(pose, self.frames[n])
                 root_joint = pose.get_root_joint()
                 self._process_static_rotations_recurse(root_joint)
-            print "ok"
+            print("ok")
 
     def _process_static_rotations_recurse(self, joint):
         if joint.definition.has_rotation:
@@ -210,7 +208,7 @@ class BvhReader(cgkit.bvh.BVHReader):
 
     def _set_static_rotations(self):
         if self._num_frames > 1:
-            for name, unique_rotations in self._unique_rotations.iteritems():
+            for name, unique_rotations in self._unique_rotations.items():
                 if len(unique_rotations) == 1:
                     joint_definition = self.hierarchy.get_joint_definition(name)
                     joint_definition.has_static_rotation = True

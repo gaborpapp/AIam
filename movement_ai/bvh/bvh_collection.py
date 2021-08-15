@@ -1,4 +1,4 @@
-import bvh_reader
+from . import bvh_reader
 from numpy import array
 import copy
 

@@ -33,7 +33,7 @@ class FeatureExtractor:
         self._horizontal_coordinates = list(set([0,1,2]) - set([coordinate_up]))
         self._feature_name_to_index = dict(
             (name, index)
-            for name, index in zip(self.FEATURES, range(len(self.FEATURES))))
+            for name, index in zip(self.FEATURES, list(range(len(self.FEATURES)))))
 
     def get_num_features(self):
         return len(self.FEATURES)

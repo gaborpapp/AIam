@@ -41,7 +41,7 @@ class StateMachine:
         self.states[name] = State(name, output_names)
 
     def compile(self):
-        for input_name, input_state in self.states.iteritems():
+        for input_name, input_state in self.states.items():
             for output_name in input_state.output_names:
                 if output_name == input_name:
                     raise Exception("transition from %s to itself!" % input_name)
@@ -57,7 +57,7 @@ class StateMachine:
         return pos1 + (pos2 - pos1) * cursor.relative_position
 
     def set_config(self, config):
-        for name, state in self.states.iteritems():
+        for name, state in self.states.items():
             state.position = Vector3d(*config.states[name])
 
 class Cursor:

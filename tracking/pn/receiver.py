@@ -100,4 +100,4 @@ class PnReceiver:
         self.on_status_message(decorated_message)
         
     def on_status_message(self, message):
-        print message
+        print(message)

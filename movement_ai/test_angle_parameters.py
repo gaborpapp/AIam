@@ -15,7 +15,7 @@ class AngleParametersTest(unittest.TestCase):
             self._assert_radians_equal(r, vector2d_to_radians(radians_to_vector2d(r)))
 
     def _assert_radians_equal(self, x, y):
-        self.assertAlmostEquals(
+        self.assertAlmostEqual(
             self._clamp_radians(x),
             self._clamp_radians(y))
 

@@ -177,10 +177,10 @@ class SwitchingBehavior(Behavior):
             mode for mode in other_modes
             if self._mode_is_available(mode)]
         if len(available_other_modes) == 0:
-            print "no other mode available"
+            print("no other mode available")
             return self._current_state
         else:
-            print "available modes:", available_other_modes
+            print("available modes:", available_other_modes)
             weights = [self._get_weight(mode) for mode in available_other_modes]
             shuffler = WeightedShuffler(available_other_modes, weights)
             return shuffler.choice()
@@ -196,7 +196,7 @@ class SwitchingBehavior(Behavior):
         return getattr(args, weight_arg)
     
     def _initialize_state(self, state):
-        print "initializing %s" % state
+        print("initializing %s" % state)
         self._current_state = state
         self._state_frames = 0
         self._interpolating = False
@@ -272,7 +272,7 @@ class SwitchingBehavior(Behavior):
             self._interpolation_crossed_halfway = False
             self._state_frames = 0
             self._next_state = self._select_next_state()
-            print "%s => %s" % (self._current_state, self._next_state)
+            print("%s => %s" % (self._current_state, self._next_state))
             self._prepare_state(self._next_state)
             return
         frames_to_process = min(self._remaining_frames_to_process, remaining_frames_in_state)
@@ -314,7 +314,7 @@ class SwitchingBehavior(Behavior):
             raise Exception("unknown state %r" % state)
             
     def _prepare_state(self, state):
-        print "preparing %s" % state
+        print("preparing %s" % state)
         if state == self.RECALL:
             self._next_recall = memory.create_random_recall(
                 self._recall_num_frames_including_interpolation,

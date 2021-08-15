@@ -57,7 +57,7 @@ class SvgExporter:
         range_max = max(range_x, range_y)
         if range_max == 0:
             scale = 1
-            print "WARNING: range_max=0 (camera too near object?)"
+            print("WARNING: range_max=0 (camera too near object?)")
         else:
             scale = 1. / range_max
         translate_x = .5 - range_x * scale / 2

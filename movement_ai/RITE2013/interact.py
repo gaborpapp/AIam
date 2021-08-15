@@ -16,8 +16,8 @@ def receive_torso_position(path, values, types, src, user_data):
     position_relative_to_camera = Vector3d(*position_tuple)
     normalized_torso_position = position_in_unit_cube(position_relative_to_camera)
     if args.show_input:
-        print "torso", position_tuple
-        print " =>", normalized_torso_position
+        print("torso", position_tuple)
+        print(" =>", normalized_torso_position)
 
 def receive_center_of_mass_position(path, values, types, src, user_data):
     global normalized_center_of_mass_position
@@ -25,8 +25,8 @@ def receive_center_of_mass_position(path, values, types, src, user_data):
     position_relative_to_camera = Vector3d(*position_tuple)
     normalized_center_of_mass_position = position_in_unit_cube(position_relative_to_camera)
     if args.show_input:
-        print "center_of_mass", position_tuple
-        print " =>", normalized_center_of_mass_position
+        print("center_of_mass", position_tuple)
+        print(" =>", normalized_center_of_mass_position)
 
 def position_in_unit_cube(position_relative_to_camera):
     global config
@@ -57,7 +57,7 @@ def refresh():
     osc_sender.send("/normalized_torso_position", *normalized_torso_position)
     if normalized_center_of_mass_position:
         osc_sender.send("/normalized_center_of_mass_position", *normalized_center_of_mass_position)
-    for state_name, probability in interpreter.state_probability.iteritems():
+    for state_name, probability in interpreter.state_probability.items():
         osc_sender.send("/state_probability", state_name, probability)
 
     output_cursor = motion_controller.output()
@@ -66,17 +66,17 @@ def refresh():
             = output_cursor.inter_state_position()
         if relative_position < 0 or \
            relative_position > 1:
-            print "WARNING: illegal relative_position in output: %r" % \
-                relative_position
+            print("WARNING: illegal relative_position in output: %r" % \
+                relative_position)
         osc_sender.send("/position",
                         source_state_name,
                         destination_state_name,
                         relative_position)
         if args.show_output:
-            print "/position %s %s %.3f" % (
+            print("/position %s %s %.3f" % (
                 source_state_name,
                 destination_state_name,
-                relative_position)
+                relative_position))
 
 def observed_state(state):
     osc_sender.send("/observed_state", state.name)

@@ -1,6 +1,6 @@
 from OpenGL.GL import *
 import math
-from shader import Shader
+from .shader import Shader
 
 class FloorGrid:
     def __init__(self, num_cells, size, floor_color, background_color, y=0):

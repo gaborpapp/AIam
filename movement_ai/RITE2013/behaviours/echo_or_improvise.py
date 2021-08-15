@@ -17,10 +17,10 @@ class Behaviour(behaviour.Behaviour):
         behaviour.Behaviour.process_input(self, input_position, time_increment)
         if self.motion_controller.get_mode() == motion_controller.IDLE:
             if self._can_echo():
-                print "echoing"
+                print("echoing")
                 self._echo()
             else:
-                print "improvising"
+                print("improvising")
                 self._initiate_random_movement()
 
     # echo

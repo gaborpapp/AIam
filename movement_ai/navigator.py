@@ -9,7 +9,7 @@ NUM_DESTINATION_CANDIDATES = 50
 
 class Navigator:
     def __init__(self, map_points):
-        self._nearest_neighbor_classifier = sklearn.neighbors.KNeighborsClassifier(
+        self._nearest_neighbor_regressor = sklearn.neighbors.KNeighborsRegressor(
             n_neighbors=1, weights='uniform')
         self.set_map_points(map_points)
         self._n_dimensions = len(map_points[0])
@@ -19,7 +19,7 @@ class Navigator:
 
     def set_map_points(self, map_points):
         self.map_points = map_points
-        self._nearest_neighbor_classifier.fit(map_points, map_points)
+        self._nearest_neighbor_regressor.fit(map_points, map_points)
         
     def set_preferred_location(self, location):
         self._preferred_location = location
@@ -84,8 +84,8 @@ class Navigator:
         previous_point = self._segments[-1]
         next_point_straightly = previous_point + (self._destination - previous_point) \
             / (self._num_segments - n - 1)
-        next_point_in_map = self._nearest_neighbor_classifier.predict(
-            next_point_straightly)[0]
+        next_point_in_map = self._nearest_neighbor_regressor.predict(
+            [next_point_straightly])[0][0]
         next_point = next_point_in_map + (next_point_straightly - next_point_in_map) * \
             min(1, novelty*0.3)
         if not numpy.array_equal(next_point, previous_point):

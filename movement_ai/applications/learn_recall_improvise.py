@@ -159,7 +159,7 @@ class UiWindow(BaseUiWindow):
         try:
             self._preset_manager.load(path)
         except IOError as exception:
-            print "WARNING: Failed to load preset from %s: %s" % (path, exception)
+            print("WARNING: Failed to load preset from %s: %s" % (path, exception))
         self._current_preset = preset_name
 
     def _preset_path(self, preset_name):
@@ -542,7 +542,7 @@ class MasterBehavior(Behavior):
         if output is None:
             return
         root_quaternion = output[0:4]
-        print "%s root: %s" % (name, root_quaternion)
+        print("%s root: %s" % (name, root_quaternion))
     
     def _get_improvise_output(self):
         reduction = self._improvise.get_reduction()

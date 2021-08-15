@@ -148,5 +148,5 @@ class Improvise(Behavior):
         return result
 
     def _set_parameters(self, parameters_dict):
-        for name, value in parameters_dict.iteritems():
+        for name, value in parameters_dict.items():
             self.params.get_parameter(name).set_value(value)

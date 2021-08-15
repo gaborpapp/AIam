@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import random
-from pca import *
+from .pca import *
 import argparse
 import tensorflow as tf
 import math
@@ -127,7 +127,7 @@ elif args.type == "nn":
                 loss, output_data = sess.run(
                         [autoencoder['cost'], autoencoder['decoded']],
                         feed_dict={input_layer: test_data})
-                print "loss %g" % loss
+                print("loss %g" % loss)
                 plot(test_data, output_data)
                 plt.show()
 

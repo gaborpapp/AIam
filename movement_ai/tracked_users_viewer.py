@@ -340,7 +340,7 @@ class TrackedUsersScene(Scene):
             torso_x, _, torso_z = user.get_joint("torso").get_position()
             bottom_y = min([user.get_joint("left_foot").get_position()[1],
                             user.get_joint("right_foot").get_position()[1]])
-            print "[%s] torso: %.1f,%.1f  bottom_y: %.1f" % (user.get_id(), torso_x, torso_z, bottom_y)
+            print("[%s] torso: %.1f,%.1f  bottom_y: %.1f" % (user.get_id(), torso_x, torso_z, bottom_y))
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton and \
@@ -377,9 +377,9 @@ class TrackedUsersScene(Scene):
         Scene.mouseReleaseEvent(self, event)
 
     def print_tracker_settings(self):
-        print "%.3f,%.3f" % (
+        print("%.3f,%.3f" % (
             self.parent().interpreter.tracker_y_position,
-            self.parent().interpreter.get_tracker_pitch())
+            self.parent().interpreter.get_tracker_pitch()))
 
     def _render_frame_timestamp(self):
         if self.parent().frame:
@@ -564,7 +564,7 @@ class TrackedUsersViewer(Window):
 
     def _set_replay_speed(self, speed):
         self.interpreter.log_replay_speed = speed
-        print "replay speed: %.1f" % speed
+        print("replay speed: %.1f" % speed)
 
     def keyPressEvent(self, event):
         key = event.key()

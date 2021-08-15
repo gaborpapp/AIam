@@ -26,7 +26,7 @@ class Calibrator(wx.Frame):
         state_id = 1
         self._position_text = {}
         self._state_id_to_name = {}
-        for state_name in state_machine.states.keys():
+        for state_name in list(state_machine.states.keys()):
             self._state_id_to_name[state_id] = state_name
             button = wx.Button(self, state_id, state_name)
             button.Bind(wx.EVT_LEFT_DOWN, self._on_button_down)

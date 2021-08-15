@@ -1,10 +1,10 @@
 from ..dimensionality_reduction_experiment import *
 from ui.ui import *
-from reduction_tab import ReductionTab
-from map_widget import MapTab
-from reduction_sliders import ReductionSliders
+from .reduction_tab import ReductionTab
+from .map_widget import MapTab
+from .reduction_sliders import ReductionSliders
 from .. import modes
-from feature_sliders import FeatureSliders
+from .feature_sliders import FeatureSliders
 import math
 
 REDUCTION_PLOT_PATH = "reduction.dat"
@@ -46,7 +46,7 @@ class DimensionalityReductionMainWindow(MainWindow):
         self.toolbar.received_parameter(event)
 
     def _add_show_reduction_action(self):
-        action = QtGui.QAction('Show normalized reduction', self)
+        action = QtWidgets.QAction('Show normalized reduction', self)
         action.triggered.connect(self._show_normalized_reduction)
         self._main_menu.addAction(action)
 
@@ -55,14 +55,14 @@ class DimensionalityReductionMainWindow(MainWindow):
         self._add_abort_path_action()
 
     def _add_abort_path_action(self):
-        action = QtGui.QAction('Abort path', self)
+        action = QtWidgets.QAction('Abort path', self)
         action.setShortcut('F12')
         action.triggered.connect(lambda: self.send_event(Event(Event.ABORT_PATH)))
         self._improvisation_menu.addAction(action)
 
     def _show_normalized_reduction(self):
         normalized_reduction = self.student.normalize_reduction(self.reduction)
-        print ",".join([str(v) for v in normalized_reduction])
+        print(",".join([str(v) for v in normalized_reduction]))
 
     def _add_html5_toolbar(self):
         from PyQt4.QtCore import QUrl
@@ -78,18 +78,18 @@ class DimensionalityReductionMainWindow(MainWindow):
     def _handle_reduction(self, event):
         self.reduction = event.content
         if self._reduction_plot:
-            print >>self._reduction_plot, " ".join([
-                    str(v) for v in self.student.normalize_reduction(self.reduction)])
+            print(" ".join([
+                    str(v) for v in self.student.normalize_reduction(self.reduction)]), file=self._reduction_plot)
         self.toolbar.on_received_reduction_from_backend(self.reduction)
 
     def _start_plot_reduction(self):
         self._reduction_plot = open(REDUCTION_PLOT_PATH, "w")
-        print "plotting reduction"
+        print("plotting reduction")
 
     def _stop_plot_reduction(self):
         self._reduction_plot.close()
         self._reduction_plot = None
-        print "saved reduction data to %s" % REDUCTION_PLOT_PATH
+        print("saved reduction data to %s" % REDUCTION_PLOT_PATH)
 
     def _set_mode(self, event):
         mode = event.content
@@ -150,7 +150,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
     def __init__(self, *args):
         ExperimentToolbar.__init__(self, *args)
         self.set_reduction_range(self.parent().student.reduction_range)
-        self._layout = QtGui.QHBoxLayout()
+        self._layout = QtWidgets.QHBoxLayout()
         self.add_input_tab_widget(self._layout)
         self._add_mode_tabs()
         self._add_reduction_tabs()
@@ -198,7 +198,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
 
     def _add_mode_tabs(self):
         self._parameter_sets = {}
-        self.tabs = QtGui.QTabWidget()
+        self.tabs = QtWidgets.QTabWidget()
         self._mode_tabs = {}
         self._add_memory_tab()
         if self.args.mode == modes.FOLLOW:
@@ -227,7 +227,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
 
     def _add_memory_tab(self):
         self.memory_tab = ModeTab(modes.MEMORY)
-        self._memory_tab_layout = QtGui.QVBoxLayout()
+        self._memory_tab_layout = QtWidgets.QVBoxLayout()
         memorize_checkbox_layout = self._add_memorize_checkbox_layout()
         self._memory_tab_layout.addLayout(memorize_checkbox_layout)
         self._add_recall_button()
@@ -237,12 +237,12 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._mode_tabs[modes.MEMORY] = self.memory_tab
 
     def _add_memorize_checkbox_layout(self):
-        layout = QtGui.QHBoxLayout()
-        layout.setMargin(5)
-        self._memorize_checkbox = QtGui.QCheckBox()
+        layout = QtWidgets.QHBoxLayout()
+        #layout.setMargin(5)
+        self._memorize_checkbox = QtWidgets.QCheckBox()
         self._memorize_checkbox.setChecked(self.parent().split_output_and_io_blend)
         self._memorize_checkbox.stateChanged.connect(self._memorize_checkbox_changed)
-        label = QtGui.QLabel("Memorize")
+        label = QtWidgets.QLabel("Memorize")
         layout.addWidget(self._memorize_checkbox)
         layout.addWidget(label)
         layout.addStretch(1)
@@ -252,7 +252,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self.parent().client.send_event(Event(Event.SET_MEMORIZE, self._memorize_checkbox.isChecked()))
         
     def _add_recall_button(self):
-        button = QtGui.QPushButton("Recall", self)
+        button = QtWidgets.QPushButton("Recall", self)
         button.clicked.connect(self._recall)
         self._memory_tab_layout.addWidget(button)
 
@@ -262,7 +262,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
     def _add_follow_tab(self):
         self.follow_tab = ModeTab(modes.FOLLOW)
         if not self.args.receive_from_pn:
-            self._follow_tab_layout = QtGui.QVBoxLayout()
+            self._follow_tab_layout = QtWidgets.QVBoxLayout()
             if hasattr(self.parent().entity, "get_duration"):
                 self._add_cursor_slider()
             if self.args.bvh:
@@ -273,7 +273,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._mode_tabs[modes.FOLLOW] = self.follow_tab
 
     def _add_cursor_slider(self):
-        self.cursor_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self.cursor_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.cursor_slider.setRange(0, SLIDER_PRECISION)
         self.cursor_slider.setSingleStep(1)
         self.cursor_slider.setValue(0.0)
@@ -281,7 +281,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._follow_tab_layout.addWidget(self.cursor_slider)
 
     def _add_bvh_selector(self):
-        self.bvh_selector = QtGui.QComboBox()
+        self.bvh_selector = QtWidgets.QComboBox()
         for bvh_reader in self.parent().entity.bvh_reader.get_readers():
             self.bvh_selector.addItem(bvh_reader.filename)
         self._follow_tab_layout.addWidget(self.bvh_selector)
@@ -293,7 +293,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
 
     def _add_explore_tab(self):
         self.explore_tab = ModeTab(modes.EXPLORE)
-        self._explore_tab_layout = QtGui.QVBoxLayout()
+        self._explore_tab_layout = QtWidgets.QVBoxLayout()
         self._add_random_button()
         self._add_deviate_button()
         if self.parent().args.entity == "hierarchical":
@@ -304,26 +304,26 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._mode_tabs[modes.EXPLORE] = self.explore_tab
 
     def _add_random_button(self):
-        button = QtGui.QPushButton("Random", self)
+        button = QtWidgets.QPushButton("Random", self)
         button.clicked.connect(self._set_random_reduction)
         self._explore_tab_layout.addWidget(button)
 
     def _add_deviate_button(self):
-        layout = QtGui.QHBoxLayout()
-        self.deviation_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        layout = QtWidgets.QHBoxLayout()
+        self.deviation_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.deviation_slider.setRange(0, SLIDER_PRECISION)
         self.deviation_slider.setSingleStep(1)
         self.deviation_slider.setValue(0.0)
         layout.addWidget(self.deviation_slider)
-        button = QtGui.QPushButton("Deviate", self)
+        button = QtWidgets.QPushButton("Deviate", self)
         button.clicked.connect(self._set_deviated_reduction)
         layout.addWidget(button)
         self._explore_tab_layout.addLayout(layout)
 
     def _add_root_vertical_orientation_form(self):
-        class OrientationSlider(QtGui.QDial):
+        class OrientationSlider(QtWidgets.QDial):
             def __init__(self):
-                QtGui.QDial.__init__(self)
+                QtWidgets.QDial.__init__(self)
                 self.setWrapping(True)
                 self.setRange(0, SLIDER_PRECISION)
                 self.setSingleStep(1)
@@ -332,12 +332,12 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
             def sizeHint(self):
                 return QtCore.QSize(50, 50)
 
-        layout = QtGui.QHBoxLayout()
-        self._root_vertical_orientation_checkbox = QtGui.QCheckBox()
+        layout = QtWidgets.QHBoxLayout()
+        self._root_vertical_orientation_checkbox = QtWidgets.QCheckBox()
         self._root_vertical_orientation_checkbox.stateChanged.connect(
             self._root_vertical_orientation_checkbox_changed)
         layout.addWidget(self._root_vertical_orientation_checkbox)
-        label = QtGui.QLabel("Lock vertical orientation")
+        label = QtWidgets.QLabel("Lock vertical orientation")
         layout.addWidget(label)
         self._root_vertical_orientation_slider = OrientationSlider()
         self._root_vertical_orientation_slider.valueChanged.connect(
@@ -373,7 +373,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
 
     def _add_imitate_tab(self):
         self.imitate_tab = ModeTab(modes.IMITATE)
-        self._imitate_tab_layout = QtGui.QVBoxLayout()
+        self._imitate_tab_layout = QtWidgets.QVBoxLayout()
         self._imitate_params = ImitateParameters()
         self._imitate_params.add_listener(self._send_changed_parameter)
         self._imitate_params_form = self.add_parameter_fields(
@@ -386,7 +386,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
 
     def _add_hybrid_tab(self):
         self.hybrid_tab = ModeTab(modes.HYBRID)
-        self._hybrid_tab_layout = QtGui.QVBoxLayout()
+        self._hybrid_tab_layout = QtWidgets.QVBoxLayout()
         self._hybrid_params = HybridParameters()
         self._hybrid_params.add_listener(self._send_changed_parameter)
         self._hybrid_params_form = self.add_parameter_fields(
@@ -399,7 +399,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
 
     def _add_improvise_tab(self):
         self.improvise_tab = ModeTab(modes.IMPROVISE)
-        self._improvise_tab_layout = QtGui.QVBoxLayout()
+        self._improvise_tab_layout = QtWidgets.QVBoxLayout()
         self._improvise_params = ImproviseParameters()
         self._improvise_params.add_listener(self._send_changed_parameter)
         self._improvise_params_form = self.add_parameter_fields(
@@ -430,7 +430,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         return self.parent().student.num_reduced_dimensions
     
     def _add_reduction_tabs(self):
-        self._reduction_tabs = QtGui.QTabWidget()
+        self._reduction_tabs = QtWidgets.QTabWidget()
         if self.parent().student.num_reduced_dimensions >= 2:
             self._add_map_tab()
         else:
@@ -509,9 +509,9 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._reduction_tabs.currentWidget().update_qgl_widgets()
 
     def _add_io_blending_tab_widget(self):
-        io_blending_tab_widget = QtGui.QTabWidget()
-        io_blending_tab = QtGui.QWidget()
-        layout = QtGui.QVBoxLayout()
+        io_blending_tab_widget = QtWidgets.QTabWidget()
+        io_blending_tab = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(0)
         layout.setMargin(0)
         io_blending_tab.setLayout(layout)
@@ -528,7 +528,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._layout.addWidget(io_blending_tab_widget)
 
     def _create_io_blending_slider(self):
-        slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         slider.setRange(0, SLIDER_PRECISION)
         slider.setSingleStep(1)
         slider.setValue(0.0)
@@ -539,13 +539,13 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self.parent().send_event(Event(Event.SET_IO_BLENDING_AMOUNT, float(value) / SLIDER_PRECISION))
 
     def _create_io_blending_use_entity_specific_interpolation_checkbox_layout(self):
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.setMargin(5)
-        self._io_blending_use_entity_specific_interpolation_checkbox = QtGui.QCheckBox()
+        self._io_blending_use_entity_specific_interpolation_checkbox = QtWidgets.QCheckBox()
         self._io_blending_use_entity_specific_interpolation_checkbox.setChecked(True)
         self._io_blending_use_entity_specific_interpolation_checkbox.stateChanged.connect(
             self._io_blending_use_entity_specific_interpolation_checkbox_changed)
-        label = QtGui.QLabel("Entity specific interpolation")
+        label = QtWidgets.QLabel("Entity specific interpolation")
         layout.addWidget(self._io_blending_use_entity_specific_interpolation_checkbox)
         layout.addWidget(label)
         layout.addStretch(1)
@@ -556,12 +556,12 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
                                        self._io_blending_use_entity_specific_interpolation_checkbox.isChecked()))
 
     def _create_split_output_and_io_blend_checkbox_layout(self):
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.setMargin(5)
-        self._split_output_and_io_blend_checkbox = QtGui.QCheckBox()
+        self._split_output_and_io_blend_checkbox = QtWidgets.QCheckBox()
         self._split_output_and_io_blend_checkbox.setChecked(self.parent().split_output_and_io_blend)
         self._split_output_and_io_blend_checkbox.stateChanged.connect(self._split_output_and_io_blend_checkbox_changed)
-        label = QtGui.QLabel("Split output and blend")
+        label = QtWidgets.QLabel("Split output and blend")
         layout.addWidget(self._split_output_and_io_blend_checkbox)
         layout.addWidget(label)
         layout.addStretch(1)
@@ -571,12 +571,12 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self.parent().split_output_and_io_blend = self._split_output_and_io_blend_checkbox.isChecked()
 
     def _create_control_friction_checkbox_layout(self):
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.setMargin(5)
-        self._control_friction_checkbox = QtGui.QCheckBox()
+        self._control_friction_checkbox = QtWidgets.QCheckBox()
         self._control_friction_checkbox.setChecked(True)
         self._control_friction_checkbox.stateChanged.connect(self._control_friction_checkbox_changed)
-        label = QtGui.QLabel("Control friction")
+        label = QtWidgets.QLabel("Control friction")
         layout.addWidget(self._control_friction_checkbox)
         layout.addWidget(label)
         layout.addStretch(1)
@@ -592,15 +592,15 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._add_input_features_tab_widget()
 
     def _add_output_features_tab_widget(self):
-        self._output_features_tab_widget = QtGui.QTabWidget()
+        self._output_features_tab_widget = QtWidgets.QTabWidget()
         self._output_features_sliders = FeatureSliders(self, self.parent().entity.feature_extractor)
         self._output_features_tab_widget.addTab(self._output_features_sliders, "Output features")
         self._layout.addWidget(self._output_features_tab_widget)
 
     def _add_input_features_tab_widget(self):
-        self._target_features_tab_widget = QtGui.QTabWidget()
-        self._target_features_sliders_tab = QtGui.QWidget()
-        layout = QtGui.QVBoxLayout()
+        self._target_features_tab_widget = QtWidgets.QTabWidget()
+        self._target_features_sliders_tab = QtWidgets.QWidget()
+        layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(0)
         layout.setMargin(0)
         self._target_features_sliders_tab.setLayout(layout)
@@ -612,11 +612,11 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
         self._layout.addWidget(self._target_features_tab_widget)
 
     def _create_target_features_checkbox_layout(self):
-        layout = QtGui.QHBoxLayout()
+        layout = QtWidgets.QHBoxLayout()
         layout.setMargin(5)
-        self._target_features_checkbox = QtGui.QCheckBox()
+        self._target_features_checkbox = QtWidgets.QCheckBox()
         self._target_features_checkbox.stateChanged.connect(self._target_features_checkbox_changed)
-        label = QtGui.QLabel("Enable target")
+        label = QtWidgets.QLabel("Enable target")
         layout.addWidget(self._target_features_checkbox)
         layout.addWidget(label)
         layout.addStretch(1)
@@ -644,7 +644,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
 
     def _add_flaneur_tab(self):
         self.flaneur_tab = ModeTab(modes.FLANEUR)
-        self._flaneur_tab_layout = QtGui.QVBoxLayout()
+        self._flaneur_tab_layout = QtWidgets.QVBoxLayout()
         self._flaneur_params = FlaneurParameters()
         self._flaneur_params.add_listener(self._send_changed_parameter)
         self._flaneur_params_form = self.add_parameter_fields(
@@ -660,7 +660,7 @@ class DimensionalityReductionToolbar(ExperimentToolbar):
             "parameters": parameters,
             "form": form}
 
-class ModeTab(QtGui.QWidget):
+class ModeTab(QtWidgets.QWidget):
     def __init__(self, mode_id):
         self._mode_id = mode_id
-        QtGui.QWidget.__init__(self)
+        QtWidgets.QWidget.__init__(self)

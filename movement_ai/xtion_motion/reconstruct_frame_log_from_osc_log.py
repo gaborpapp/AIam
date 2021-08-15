@@ -1,5 +1,5 @@
 import argparse
-import cPickle
+import pickle
 
 MIN_DURATION_BETWEEN_FRAMES = 0.01
 
@@ -25,7 +25,7 @@ def add_to_current_frame(path, values):
 
 def append_frame_to_output():
     global frame, output_file
-    output_file.write(cPickle.dumps(frame))
+    output_file.write(pickle.dumps(frame))
 
 frame = None
 input_file = open(args.osc_log)
@@ -33,7 +33,7 @@ output_file = open(args.output, "w")
 previous_time = None
 try:
     while True:
-        t, path, values = cPickle.load(input_file)
+        t, path, values = pickle.load(input_file)
         if previous_time is None:
             start_new_frame(t)
         else:

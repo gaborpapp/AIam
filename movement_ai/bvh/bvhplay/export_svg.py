@@ -27,7 +27,7 @@ args = parser.parse_args()
 
 def write_svg(string):
     global output
-    print >>output, string
+    print(string, file=output)
 
 if args.begin is None:
     begin = 1
@@ -44,7 +44,7 @@ if args.num_frames is None:
 else:
     num_frames = args.num_frames
 
-print "exporting %s frames in the range %s-%s" % (num_frames, begin, end)
+print("exporting %s frames in the range %s-%s" % (num_frames, begin, end))
 
 def write_header():
     write_svg('<svg xmlns="http://www.w3.org/2000/svg" version="1.1">')
@@ -77,7 +77,7 @@ exporter = SvgExporter(args.filename, args.camera_x, args.camera_y, args.camera_
 for n in range(num_frames):
     relative_frame_index = float(n) / num_frames
     frame_index = begin + int(relative_frame_index * (end - begin))
-    print "adding frame %s" % frame_index
+    print("adding frame %s" % frame_index)
     x_offset = args.displacement * n
 
     if args.split:

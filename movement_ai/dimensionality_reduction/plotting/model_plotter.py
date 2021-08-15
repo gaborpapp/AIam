@@ -38,8 +38,8 @@ class ModelPlotter:
         self._observation_region_template = numpy.zeros((
                 self._observation_region_size,
                 self._observation_region_size))
-        for dx in xrange(-radius, radius+1):
-            for dy in xrange(-radius, radius+1):
+        for dx in range(-radius, radius+1):
+            for dy in range(-radius, radius+1):
                 if (dx*dx + dy*dy) <= radius*radius:
                     self._observation_region_template[dx + radius, dy + radius] = 1
         self._observation_region_radius = radius
@@ -48,19 +48,19 @@ class ModelPlotter:
         self._output_buffer = numpy.zeros((self._size, self._size))
 
     def _add_observation_regions_to_buffer(self):
-        print "creating plot..."
+        print("creating plot...")
         for observation in self._experiment.student.normalized_observed_reductions:
             self._add_observation_region_to_buffer(observation)
 
     def _convert_buffer_to_bitmap(self):
-        print "converting plot to bitmap..."
+        print("converting plot to bitmap...")
         monochromatic_bitmap = self._output_buffer.flatten('F')
         monochromatic_normalized_bitmap = monochromatic_bitmap / max(monochromatic_bitmap)
         rgb_normalized_bitmap = numpy.concatenate([[1-value]*3 for value in monochromatic_normalized_bitmap])
         self._rgb_bitmap = [int(value * 255) for value in rgb_normalized_bitmap]
 
     def _save_bitmap_to_file(self):
-        print "saving bitmap..."
+        print("saving bitmap...")
         image = Image.frombytes("RGB", (self._size, self._size),
                                 data=self._array_to_string(self._rgb_bitmap))
         image.save(self._args.output)

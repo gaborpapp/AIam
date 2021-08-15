@@ -33,7 +33,7 @@ class QuaternionAnalyzer:
 
     def _identify_hemisphere_profiles(self):
         self._hemisphere_profiles = {}
-        for joint_name, hemisphere_count in self._hemisphere_counts.iteritems():
+        for joint_name, hemisphere_count in self._hemisphere_counts.items():
             self._hemisphere_profiles[joint_name] = self._hemisphere_profile(
                 hemisphere_count)
 
@@ -53,11 +53,11 @@ class QuaternionAnalyzer:
 
     def _print_result_for_profile(self, profile):
         joint_names = [joint_name
-                       for joint_name, value in self._hemisphere_profiles.iteritems()
+                       for joint_name, value in self._hemisphere_profiles.items()
                        if value == profile]
-        print profile
+        print(profile)
         for joint_name in joint_names:
-            print "  %s: %s" % (joint_name, self._hemisphere_counts[joint_name])
+            print("  %s: %s" % (joint_name, self._hemisphere_counts[joint_name]))
 
     def _process_joint_recurse(self, joint):
         if joint.rotation:

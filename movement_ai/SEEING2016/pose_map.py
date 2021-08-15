@@ -22,7 +22,7 @@ class MapView(QtOpenGL.QGLWidget):
         self._set_camera_from_arg(experiment.args.camera)
 
     def _set_camera_from_arg(self, arg):
-        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, arg.split(","))
+        pos_x, pos_y, pos_z, orient_y, orient_z = list(map(float, arg.split(",")))
         self._set_camera_position([pos_x, pos_y, pos_z])
         self._set_camera_orientation(orient_y, orient_z)
 

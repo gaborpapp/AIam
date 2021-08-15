@@ -3,9 +3,9 @@ from argparse import ArgumentParser
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-from bvh_reader import BvhReader
-from bvh_writer import BvhWriter
-from processing import BvhProcessor
+from .bvh_reader import BvhReader
+from .bvh_writer import BvhWriter
+from .processing import BvhProcessor
 
 parser = ArgumentParser()
 parser.add_argument("--input", "-i", required=True)

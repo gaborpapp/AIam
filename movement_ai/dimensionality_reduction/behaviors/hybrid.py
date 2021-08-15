@@ -1,7 +1,7 @@
 import numpy
 from flaneur import Flaneur
-from flaneur_behavior import FlaneurParameters
-from imitate import Imitate, ImitateParameters, THRESHOLD_DISTANCE_TO_TARGET
+from .flaneur_behavior import FlaneurParameters
+from .imitate import Imitate, ImitateParameters, THRESHOLD_DISTANCE_TO_TARGET
 from event import Event
 from parameters import *
 from interpolation import linear_interpolation
@@ -197,7 +197,7 @@ class Hybrid(Behavior):
         #     self._set_flaneur_parameters(ACTIVE_FLANEUR_PARAMETERS)
 
     def _set_flaneur_parameters(self, parameters_dict):
-        for name, value in parameters_dict.iteritems():
+        for name, value in parameters_dict.items():
             self._parameters.get_parameter("flaneur_%s" % name).set_value(value)
 
     def get_root_vertical_orientation(self):
@@ -225,7 +225,7 @@ class Hybrid(Behavior):
             self._set_orientation_state(IMITATE)
 
     def _set_orientation_state(self, new_state):
-        print "orientation state %s => %s" % (self._orientation_state, new_state)
+        print("orientation state %s => %s" % (self._orientation_state, new_state))
         self._orientation_state = new_state
 
     def _tracked_orientation_almost_equals_entity_orientation(self):

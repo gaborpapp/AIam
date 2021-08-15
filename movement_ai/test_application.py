@@ -75,7 +75,7 @@ class GetFrameByIndexTestCase(unittest.TestCase):
         self._result = self._memory.get_frame_by_index(index)
 
     def then_result_is(self, expected_result):
-        self.assertEquals(expected_result, self._result)
+        self.assertEqual(expected_result, self._result)
         
     def test_base_case(self):
         self.given_memory_with_frames(["a", "b", "c"])

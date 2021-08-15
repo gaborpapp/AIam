@@ -1,5 +1,5 @@
 import numpy
-import cPickle
+import pickle
 
 class DimensionalityReduction:
     @staticmethod
@@ -51,7 +51,7 @@ class DimensionalityReduction:
         reductions = self.transform(observations)
         reconstructions = self.inverse_transform(reductions)
         mean_squared_error = ((observations - reconstructions) ** 2).mean(axis=None)
-        print "mean squared error: %s" % mean_squared_error
+        print("mean squared error: %s" % mean_squared_error)
 
     def transform(self, observations):
         raise NotImplementedError()
@@ -68,13 +68,13 @@ class DimensionalityReduction:
         self.load_persistant_state(path)
         
     def save_persistent_state(self, model_path):
-        f = open(self._persistant_state_path(model_path), "w")
-        cPickle.dump((self.reduction_range, self.normalized_observed_reductions), f)
+        f = open(self._persistant_state_path(model_path), "wb")
+        pickle.dump((self.reduction_range, self.normalized_observed_reductions), f)
         f.close()
 
     def load_persistant_state(self, model_path):
-        f = open(self._persistant_state_path(model_path))
-        self.reduction_range, self.normalized_observed_reductions = cPickle.load(f)
+        f = open(self._persistant_state_path(model_path), "rb")
+        self.reduction_range, self.normalized_observed_reductions = pickle.load(f)
         f.close()
 
     def _persistant_state_path(self, model_path):

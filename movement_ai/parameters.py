@@ -48,7 +48,7 @@ class Parameters:
         if name in self._parameters_by_name:
             return self._parameters_by_name[name].value()
         else:
-            raise AttributeError("%r not among %r" % (name, self._parameters_by_name.keys()))
+            raise AttributeError("%r not among %r" % (name, list(self._parameters_by_name.keys())))
 
     def get_parameter(self, name):
         return self._parameters_by_name[name]

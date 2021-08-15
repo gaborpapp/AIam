@@ -9,7 +9,7 @@ MIN_MOVE_DURATION = 2.0
 MIN_DISTANCE = 0.001
 MAX_DISTANCE = 0.5
 
-MOVE, STATE, LEAVING_CENTER, ENTERING_CENTER, ACTIVITY = range(5)
+MOVE, STATE, LEAVING_CENTER, ENTERING_CENTER, ACTIVITY = list(range(5))
 
 SENSE_CENTER = False
 
@@ -68,7 +68,7 @@ class Interpreter:
         self._process_passivity_detectors(time_increment)
 
     def _update_state_probabilities(self, input_position):
-        for state_name, state in state_machine.states.iteritems():
+        for state_name, state in state_machine.states.items():
             distance = (state.position - input_position).mag()
             probability = 1 - (self._clamp(distance, MIN_DISTANCE, MAX_DISTANCE) - MIN_DISTANCE) / \
                  (MAX_DISTANCE - MIN_DISTANCE)
@@ -120,7 +120,7 @@ class Interpreter:
                 self._duration_in_state = 0
 
     def _nearest_state(self):
-        return min(state_machine.states.values(),
+        return min(list(state_machine.states.values()),
                    key=lambda state: self._distance_to_state(state))
 
     def _distance_to_state(self, state):

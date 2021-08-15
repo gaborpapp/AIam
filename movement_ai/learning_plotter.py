@@ -15,7 +15,7 @@ class LearningPlotter:
                 self._student.train(inp, expected_output)
                 output = self._student.process(inp)
                 error = self._teacher.judge_error(expected_output, output)
-                print >>f, t, error
+                print(t, error, file=f)
             self._teacher.proceed(time_increment)
             t += time_increment
         f.close()

@@ -41,4 +41,4 @@ class EventHandlerMergingTestCase(unittest.TestCase):
         self._called_handlers.append(handler)
 
     def _then_called_handlers_are(self, expected):
-        self.assertEquals(expected, self._called_handlers)
+        self.assertEqual(expected, self._called_handlers)

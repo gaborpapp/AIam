@@ -8,7 +8,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 from PyQt4 import QtCore, QtGui, QtOpenGL
 
-from receiver import PnReceiver, SERVER_PORT_BVH
+from .receiver import PnReceiver, SERVER_PORT_BVH
 
 import sys
 import os
@@ -118,7 +118,7 @@ class Scene(QtOpenGL.QGLWidget):
         timer.start()
         
     def _set_camera_from_arg(self, arg):
-        pos_x, pos_y, pos_z, orient_y, orient_z = map(float, arg.split(","))
+        pos_x, pos_y, pos_z, orient_y, orient_z = list(map(float, arg.split(",")))
         self._set_camera_position([pos_x, pos_y, pos_z])
         self._set_camera_orientation(orient_y, orient_z)
 
@@ -269,11 +269,11 @@ class Scene(QtOpenGL.QGLWidget):
         self._drag_y_previous = y
 
     def print_camera_settings(self):
-        print "%.3f,%.3f,%.3f,%.3f,%.3f" % (
+        print("%.3f,%.3f,%.3f,%.3f,%.3f" % (
             self._camera_position[0],
             self._camera_position[1],
             self._camera_position[2],
-            self._camera_y_orientation, self._camera_x_orientation)
+            self._camera_y_orientation, self._camera_x_orientation))
 
 def receive():
     global frame
@@ -286,9 +286,9 @@ pose = bvh_reader.get_hierarchy().create_pose()
 frame = None
 
 pn_receiver = PnReceiver()
-print "connecting..."
+print("connecting...")
 pn_receiver.connect(args.host, args.port)
-print "ok"
+print("ok")
 
 pn_receiver.show_fps = args.show_fps
 

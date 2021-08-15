@@ -62,7 +62,7 @@ class PredictionExperiment(Experiment):
         self.output = self.student.process(self.input)
 
     def _train_model(self):
-        print "training model..."
+        print("training model...")
         t = 0
         time_increment = 1.0 / 50
         training_duration = self._training_duration()
@@ -73,7 +73,7 @@ class PredictionExperiment(Experiment):
                 self.student.train(inp, output)
             self.teacher.proceed(time_increment)
             t += time_increment
-        print "ok"
+        print("ok")
 
     def should_read_bvh_frames(self):
         return True

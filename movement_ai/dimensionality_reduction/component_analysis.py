@@ -11,7 +11,7 @@ class ComponentAnalysis:
             self._analyze_component(n)
 
     def _analyze_component(self, n, resolution=10, group_by_parameter_category=True):
-        print "component %s:" % n
+        print("component %s:" % n)
 
         output_components = []
         for output_component_index in range(self._num_output_components):
@@ -40,10 +40,10 @@ class ComponentAnalysis:
             key=lambda output_component: -output_component["variance"])
         for i in range(10):
             output_component = output_components_sorted_by_variance[i]
-            print "  %s [%s] (%s)" % (
+            print("  %s [%s] (%s)" % (
                 output_component["parameter_category"],
                 ",".join(output_component["parameter_components"]),
-                output_component["variance"])
+                output_component["variance"]))
 
     def _group_components_by_category(self, components):
         result = []

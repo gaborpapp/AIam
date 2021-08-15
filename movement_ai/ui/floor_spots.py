@@ -1,6 +1,6 @@
 import math
 from OpenGL.GL import *
-from shader import Shader
+from .shader import Shader
 
 FLOOR_SPOT_RADIUS = 1
 FLOOR_GRID_SIZE = 9

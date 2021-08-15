@@ -1,6 +1,6 @@
-from dimensionality_reduction_ui import *
+from .dimensionality_reduction_ui import *
 
-class FeatureSliders(QtGui.QWidget):
+class FeatureSliders(QtWidgets.QWidget):
     def __init__(self, parent, feature_extractor):
         QtGui.QWidget.__init__(self)
         self._parent = parent

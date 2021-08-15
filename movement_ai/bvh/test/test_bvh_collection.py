@@ -95,7 +95,7 @@ class BvhCollectionTestCase(unittest.TestCase):
         self._result = self._bvh_collection.get_duration()
 
     def _then_result_is(self, expected_value):
-        self.assertEquals(expected_value, self._result)
+        self.assertEqual(expected_value, self._result)
 
     def test_static_rotation_is_intersection(self):
         self._given_bvh_reader(joints_with_static_rotation=["LArm", "RArm", "Hip"])

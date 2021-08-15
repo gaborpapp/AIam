@@ -25,5 +25,5 @@ samples = experiment._sampling_class(data, experiment._sampling_args).sample()
 
 out = open(args.output, "w")
 for sample in samples:
-    print >>out, " ".join([str(value) for value in sample])
+    print(" ".join([str(value) for value in sample]), file=out)
 out.close()

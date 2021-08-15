@@ -1,17 +1,17 @@
 from experiment import *
-from dimensionality_reduction_teacher import *
-from component_analysis import ComponentAnalysis
-from factory import DimensionalityReductionFactory
+from .dimensionality_reduction_teacher import *
+from .component_analysis import ComponentAnalysis
+from .factory import DimensionalityReductionFactory
 import random
 import collections
-import modes
+from . import modes
 from parameters import *
-from behaviors.follow import Follow
-from behaviors.explore import Explore
-from behaviors.imitate import Imitate, ImitateParameters
-from behaviors.improvise import ImproviseParameters, Improvise
-from behaviors.flaneur_behavior import FlaneurBehavior, FlaneurParameters
-from behaviors.hybrid import Hybrid, HybridParameters
+from .behaviors.follow import Follow
+from .behaviors.explore import Explore
+from .behaviors.imitate import Imitate, ImitateParameters
+from .behaviors.improvise import ImproviseParameters, Improvise
+from .behaviors.flaneur_behavior import FlaneurBehavior, FlaneurParameters
+from .behaviors.hybrid import Hybrid, HybridParameters
 import sampling
 import sklearn.neighbors
 from transformations import euler_from_quaternion
@@ -196,9 +196,9 @@ class DimensionalityReductionExperiment(Experiment):
             if self.args.resume_training:
                 self._load_model()
             self._train_model()
-            print "saving %s..." % self._student_model_path
+            print("saving %s..." % self._student_model_path)
             self.student.save(self._student_model_path)
-            print "ok"
+            print("ok")
             storage.save(self.training_entity.model, self._entity_model_path)
 
         elif self.args.analyze_components:
@@ -269,7 +269,7 @@ class DimensionalityReductionExperiment(Experiment):
     def _prepare_training_data(self):
         if os.path.exists(self._training_data_path):
             self._training_data = storage.load(self._training_data_path)
-            print "data size: %d samples" % len(self._training_data)
+            print("data size: %d samples" % len(self._training_data))
         else:
             teacher = Teacher(self.training_entity, self.args.training_data_frame_rate)
             self._training_data = teacher.create_training_data(self._training_duration())
@@ -345,14 +345,15 @@ class DimensionalityReductionExperiment(Experiment):
         self._improvise.select_next_move()
 
     def add_ui_parser_arguments(self, parser):
-        from ui.dimensionality_reduction_ui import DimensionalityReductionMainWindow
+        from .ui.dimensionality_reduction_ui import DimensionalityReductionMainWindow
         DimensionalityReductionMainWindow.add_parser_arguments(parser)
 
     def run_ui(self, client):
-        from PyQt4 import QtGui
-        app = QtGui.QApplication(sys.argv)
+        from PyQt5 import QtWidgets
+        #from PySide2 import QtGui
+        app = QtWidgets.QApplication(sys.argv)
         app.setStyleSheet(open("dimensionality_reduction/ui/stylesheet.qss").read())
-        app.setWindowIcon(QtGui.QIcon("ui/icon.png"))
+        #app.setWindowIcon(QtGui.QIcon("ui/icon.png"))
         window = self._create_ui_window(client)
         window.start()
         if client:
@@ -361,26 +362,26 @@ class DimensionalityReductionExperiment(Experiment):
         app.exec_()
 
     def _create_ui_window(self, client):
-        from ui.dimensionality_reduction_ui import DimensionalityReductionMainWindow, \
+        from .ui.dimensionality_reduction_ui import DimensionalityReductionMainWindow, \
             DimensionalityReductionToolbar
         return DimensionalityReductionMainWindow(client, 
             self.entity, self.student, self.bvh_reader, self._scene_class,
             DimensionalityReductionToolbar, self.args)
 
     def _load_model(self):
-        print "loading %s..." % self._student_model_path
+        print("loading %s..." % self._student_model_path)
         self.student.load(self._student_model_path)
-        print "ok"
+        print("ok")
         entity_model = storage.load(self._entity_model_path)
 
     def _train_model(self):
         if hasattr(self.training_entity, "probe"):
-            print "probing entity..."
+            print("probing entity...")
             self.training_entity.probe(self._training_data)
-            self._training_data = map(self.training_entity.adapt_value_to_model, self._training_data)
-            print "ok"
+            self._training_data = list(map(self.training_entity.adapt_value_to_model, self._training_data))
+            print("ok")
         
-        print "training model..."
+        print("training model...")
         if self.student.supports_incremental_learning():
             if self.args.train_incrementally:
                 self._train_incrementally()
@@ -392,11 +393,11 @@ class DimensionalityReductionExperiment(Experiment):
                     self.args.target_loss_slope)
         else:
             self.student.fit(self._training_data)
-        print "ok"
+        print("ok")
 
-        print "probing model..."
+        print("probing model...")
         self.student.probe(self._training_data)
-        print "ok"
+        print("ok")
 
     def _train_incrementally(self):
         try:
@@ -404,21 +405,21 @@ class DimensionalityReductionExperiment(Experiment):
                 for training_datum in self._training_data:
                     self.student.train([training_datum])
         except KeyboardInterrupt:
-            print "Training stopped at epoch %d" % epoch
+            print("Training stopped at epoch %d" % epoch)
         
     def _print_training_data_stats(self):
         format = "%-5s%-20s%-8s%-8s%-8s%-8s"
-        print format % ("n", "descr", "min", "max", "mean", "var")
+        print(format % ("n", "descr", "min", "max", "mean", "var"))
         for n in range(len(self._training_data[0])):
             parameter_info = self.training_entity.parameter_info(n)
             col = self._training_data[:,n]
             stats = ["%.2f" % v for v in [min(col), max(col), numpy.mean(col), numpy.var(col)]]
-            print format % (
+            print(format % (
                 n, "%s %s" % (parameter_info["category"], parameter_info["component"]),
                 stats[0],
                 stats[1],
                 stats[2],
-                stats[3])
+                stats[3]))
 
     def update(self):
         if self.args.enable_follow or self.args.receive_from_pn:
@@ -527,25 +528,25 @@ class DimensionalityReductionExperiment(Experiment):
         self._broadcast_event_to_other_uis(event)
 
     def _train_feature_matcher(self):
-        print "training feature matcher:"
+        print("training feature matcher:")
         feature_matcher = sklearn.neighbors.KNeighborsClassifier(
             n_neighbors=self.args.num_feature_matches, weights='uniform')
-        print "sampling training data of size %s..." % len(
-            self.student.normalized_observed_reductions)
+        print("sampling training data of size %s..." % len(
+            self.student.normalized_observed_reductions))
         sampled_normalized_reductions = self._sample_normalized_reduction_space(
             self.student.normalized_observed_reductions)
-        print "selected %s samples" % len(sampled_normalized_reductions)
+        print("selected %s samples" % len(sampled_normalized_reductions))
         sampled_reductions = [
             self.student.unnormalize_reduction(normalized_reduction)
             for normalized_reduction in sampled_normalized_reductions]
-        print "extracting features from samples..."
+        print("extracting features from samples...")
         feature_vectors = [
             self._reduction_to_feature_vector(reduction)
             for reduction in sampled_reductions]
-        print "ok"
-        print "training feature matcher on samples..."
+        print("ok")
+        print("training feature matcher on samples...")
         feature_matcher.fit(feature_vectors, sampled_reductions)
-        print "ok"
+        print("ok")
         storage.save((feature_matcher, sampled_reductions), self._feature_matcher_path)
 
     def _sample_normalized_reduction_space(self, observations):
@@ -587,7 +588,7 @@ class DimensionalityReductionExperiment(Experiment):
             self._memory.end_memorizing()
             
     def _plot_model(self):
-        from plotting.model_plotter import ModelPlotter
+        from .plotting.model_plotter import ModelPlotter
         parser = ArgumentParser()
         ModelPlotter.add_parser_arguments(parser)
         if self.args.plot_args:
@@ -600,7 +601,7 @@ class DimensionalityReductionExperiment(Experiment):
         plotter.plot()
 
     def _plot_pose_map_contents(self):
-        from plotting.pose_map_contents_plotter import PoseMapContentsPlotter
+        from .plotting.pose_map_contents_plotter import PoseMapContentsPlotter
         parser = ArgumentParser()
         PoseMapContentsPlotter.add_parser_arguments(parser)
         if self.args.plot_args:
@@ -623,13 +624,13 @@ class StillsExporter:
             if len(line) > 1 and not line.startswith("#"):
                 strings = line.split(" ")
                 if len(strings) > 0:
-                    normalized_reduction = map(float, strings)
+                    normalized_reduction = list(map(float, strings))
                     reduction = self.experiment.student.unnormalize_reduction(normalized_reduction)
                     reductions.append(reduction)
         return reductions
 
     def export(self):
-        print "exported stills to %s..." % self._output_path
+        print("exported stills to %s..." % self._output_path)
         bvh_writer = BvhWriter(
             self.experiment.bvh_reader.get_hierarchy(),
             self.experiment.bvh_reader.get_frame_time())
@@ -638,4 +639,4 @@ class StillsExporter:
             self.experiment.entity.parameters_to_processed_pose(output, self.experiment.pose)
             bvh_writer.add_pose_as_frame(self.experiment.pose)
         bvh_writer.write(self._output_path)
-        print "ok"
+        print("ok")

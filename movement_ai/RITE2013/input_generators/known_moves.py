@@ -5,7 +5,7 @@ from utils import random_unit_sphere_position
 import math
 from motion_durations import get_duration
 
-PAUSE, MOVE = range(2)
+PAUSE, MOVE = list(range(2))
 PROBABILITY_TO_CENTER = 0.8
 
 class Generator(input_generator.Generator):
@@ -46,7 +46,7 @@ class Generator(input_generator.Generator):
         self._move_duration = get_duration(self._source_state, self._destination_state) * \
                               (1.0 + random.uniform(-self._move_duration_fluctuation,
                                                     +self._move_duration_fluctuation))
-        print "%s -> %s" % (self._source_state.name, self._destination_state.name)
+        print("%s -> %s" % (self._source_state.name, self._destination_state.name))
         distance = (self._destination_position - self._source_state.position).mag()
         self._t = 0.0
 

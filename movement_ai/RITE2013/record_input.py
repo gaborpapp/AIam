@@ -1,6 +1,6 @@
 from simple_osc_receiver import OscReceiver
 import time
-import cPickle
+import pickle
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
@@ -16,7 +16,7 @@ def receive_torso_position(path, args, types, src, user_data):
     record_input(t, position_tuple)
 
 def record_input(t, position_tuple):
-    print t, position_tuple
+    print(t, position_tuple)
 
 first_input_time = None
 osc_receiver = OscReceiver(7891, listen="localhost")

@@ -27,13 +27,13 @@ class Behaviour(behaviour.Behaviour):
 
     def _on_leaving_center(self, input_position):
         if self.enabled:
-            print "LEAVING_CENTER"
+            print("LEAVING_CENTER")
             self._select_target_state(input_position)
             self.motion_controller.initiate_free_movement()
 
     def _on_entering_center(self, input_position):
         if self.enabled:
-            print "ENTERING_CENTER"
+            print("ENTERING_CENTER")
             self.motion_controller.initiate_idle()
 
     def _select_target_state(self, input_position):

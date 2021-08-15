@@ -41,12 +41,12 @@ class PoseMapContentsPlotter:
 
     def plot(self):
         if self._experiment.student.num_reduced_dimensions > 2:
-            print "WARNING: model has %d dimensions, but %s only considers the first 2" % \
-                (self._experiment.student.num_reduced_dimensions, self.__class__.__name__)
+            print("WARNING: model has %d dimensions, but %s only considers the first 2" % \
+                (self._experiment.student.num_reduced_dimensions, self.__class__.__name__))
         contrainers = self._experiment.entity._unnormalized_constrainers
         if contrainers.enable_friction or contrainers.enable_floor:
-            print "WARNING: constrainers applied in entity, but this may not be handled properly by %s " \
-                "since a single pose object is used throughout the grid" % self.__class__.__name__
+            print("WARNING: constrainers applied in entity, but this may not be handled properly by %s " \
+                "since a single pose object is used throughout the grid" % self.__class__.__name__)
 
         if self._args.animate_learning:
             self._plot_learning_animation()
@@ -72,8 +72,8 @@ class PoseMapContentsPlotter:
         self._outer_cell_size = self._args.plot_size / self._args.grid_resolution
         self._inner_cell_size = self._outer_cell_size - 2 * self._args.padding
         self._generate_header()
-        for grid_y in xrange(self._args.grid_resolution):
-            for grid_x in xrange(self._args.grid_resolution):
+        for grid_y in range(self._args.grid_resolution):
+            for grid_x in range(self._args.grid_resolution):
                 self._render_cell(grid_x, grid_y)
         self._generate_footer()
         self._out.close()
@@ -88,8 +88,8 @@ class PoseMapContentsPlotter:
         self._distances_to_nearest_observation = numpy.zeros(
             (self._args.grid_resolution, self._args.grid_resolution))
 
-        for grid_y in xrange(self._args.grid_resolution):
-            for grid_x in xrange(self._args.grid_resolution):
+        for grid_y in range(self._args.grid_resolution):
+            for grid_x in range(self._args.grid_resolution):
                 normalized_reduction = self._get_normalized_reduction(grid_x, grid_y)
                 self._distances_to_nearest_observation[grid_x, grid_y] = self._distance_to_nearest_observation(
                     normalized_reduction)
@@ -180,4 +180,4 @@ class PoseMapContentsPlotter:
         self._write('</svg>\n')
 
     def _write(self, string):
-        print >>self._out, string
+        print(string, file=self._out)
