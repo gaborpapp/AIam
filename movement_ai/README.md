@@ -1,8 +1,8 @@
 ## Requirements
 
-The movement AI requires Python 2.7.
+The movement AI requires Python 3.
 
-The software has been tested on Linux and OSX.
+It has been tested with Python 3.6 on Linux.
 
 ## Installation
 It is highly recommended to install the movement AI in a [virtual environment](https://pypi.org/project/virtualenv/).
