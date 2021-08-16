@@ -2,9 +2,8 @@
 
 import math
 import time
-from .bvh_collection import BvhCollection
 from argparse import ArgumentParser
-from PyQt4 import QtCore, QtGui, QtOpenGL
+from PyQt5 import QtCore, QtWidgets, QtOpenGL
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
@@ -18,6 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__))+"/..")
 
 from ui.floor_checkerboard import FloorCheckerboard
 from ui.window import Window
+from bvh.bvh_collection import BvhCollection
 
 FLOOR_ARGS = {"num_cells": 26, "size": 26,
               "board_color1": (.2, .2, .2, 1),
@@ -34,9 +34,8 @@ class MainWindow(Window):
     def __init__(self, bvh_reader, args):
         global transport_controls
         Window.__init__(self, args)
-        self._main_layout = QtGui.QVBoxLayout()
+        self._main_layout = QtWidgets.QVBoxLayout()
         self._main_layout.setSpacing(0)
-        self._main_layout.setMargin(0)
         self._main_layout.setContentsMargins(0, 0, 0, 0)
         self._scene = Scene(bvh_reader, args)
         self._main_layout.addWidget(self._scene)
@@ -47,7 +46,7 @@ class MainWindow(Window):
         self.setLayout(self._main_layout)
 
     def _create_menu(self):
-        self._menu_bar = QtGui.QMenuBar()
+        self._menu_bar = QtWidgets.QMenuBar()
         self._main_layout.setMenuBar(self._menu_bar)
         self._create_main_menu()
 
@@ -60,44 +59,44 @@ class MainWindow(Window):
         self._add_quit_action()
 
     def _add_play_stop_action(self):
-        action = QtGui.QAction('Play/stop', self)
+        action = QtWidgets.QAction('Play/stop', self)
         action.triggered.connect(transport.toggle_play)
         action.setShortcut(" ")
         self._main_menu.addAction(action)
 
     def _add_skip_action(self, text, shortcut, seconds):
-        action = QtGui.QAction(text, self)
+        action = QtWidgets.QAction(text, self)
         action.triggered.connect(lambda: transport.skip(seconds))
         action.setShortcut(shortcut)
         self._main_menu.addAction(action)
         
     def _add_show_camera_settings_action(self):
-        action = QtGui.QAction('Show camera settings', self)
+        action = QtWidgets.QAction('Show camera settings', self)
         action.triggered.connect(self._scene.print_camera_settings)
         self._main_menu.addAction(action)
         
     def _add_quit_action(self):
-        action = QtGui.QAction("&Quit", self)
-        action.triggered.connect(QtGui.QApplication.exit)
+        action = QtWidgets.QAction("&Quit", self)
+        action.triggered.connect(QtWidgets.QApplication.exit)
         self._main_menu.addAction(action)
         
     def keyPressEvent(self, event):
         self._scene.keyPressEvent(event)
-        QtGui.QWidget.keyPressEvent(self, event)
+        QtWidgets.QWidget.keyPressEvent(self, event)
 
 class TransportControls:
     def __init__(self):
-        self._widget = QtGui.QWidget()
-        main_layout = QtGui.QVBoxLayout()
+        self._widget = QtWidgets.QWidget()
+        main_layout = QtWidgets.QVBoxLayout()
         self._widget.setLayout(main_layout)
         
-        top_layout = QtGui.QHBoxLayout()
+        top_layout = QtWidgets.QHBoxLayout()
         self._add_cursor_slider(top_layout)
         self._add_frame_index_label(top_layout)
         self._add_time_label(top_layout)
         main_layout.addLayout(top_layout)
 
-        bottom_layout = QtGui.QHBoxLayout()
+        bottom_layout = QtWidgets.QHBoxLayout()
         self._add_play_button(bottom_layout)
         self._add_stop_button(bottom_layout)
         self._add_skip_button("Skip backward", QtCore.Qt.Key_Left, -1, bottom_layout)
@@ -110,7 +109,7 @@ class TransportControls:
 
     def _add_cursor_slider(self, layout):
         def create_slider():
-            slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+            slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
             slider.setRange(0, SLIDER_PRECISION)
             slider.setSingleStep(1)
             slider.valueChanged.connect(on_changed_slider_value)
@@ -138,12 +137,12 @@ class TransportControls:
         self._frame_index_label.setText("%d" % frame_index)
 
     def _add_frame_index_label(self, layout):
-        self._frame_index_label = QtGui.QLabel()
+        self._frame_index_label = QtWidgets.QLabel()
         self._frame_index_label.setFixedWidth(60)
         layout.addWidget(self._frame_index_label)
 
     def _add_time_label(self, layout):
-        self._time_label = QtGui.QLabel()
+        self._time_label = QtWidgets.QLabel()
         self._time_label.setFixedWidth(100)
         layout.addWidget(self._time_label)
 
@@ -151,12 +150,12 @@ class TransportControls:
         self._time_label.setText(time.strftime("%H:%M:%S", time.gmtime(t)))
         
     def _add_play_button(self, layout):
-        button = QtGui.QPushButton(text="Play")
+        button = QtWidgets.QPushButton(text="Play")
         button.clicked.connect(transport.play)
         layout.addWidget(button)
 
     def _add_stop_button(self, layout):
-        button = QtGui.QPushButton(text="Stop")
+        button = QtWidgets.QPushButton(text="Stop")
         button.clicked.connect(transport.stop)
         layout.addWidget(button)
 
@@ -164,7 +163,7 @@ class TransportControls:
         def skip():
             transport.skip(seconds)
             
-        button = QtGui.QPushButton(text=text)
+        button = QtWidgets.QPushButton(text=text)
         button.clicked.connect(skip)
         button.setShortcut(shortcut_key)
         layout.addWidget(button)
@@ -185,7 +184,7 @@ class Scene(QtOpenGL.QGLWidget):
             
         timer = QtCore.QTimer(self)
         timer.setInterval(1.0 / FRAME_RATE)
-        QtCore.QObject.connect(timer, QtCore.SIGNAL('timeout()'), self.updateGL)
+        timer.timeout.connect(self.updateGL)
         timer.start()
              
     def _set_camera_from_arg(self, arg):
@@ -493,7 +492,7 @@ if args.simulate_pn:
     server_thread.daemon = True
     server_thread.start()
 
-app = QtGui.QApplication(sys.argv)
+app = QtWidgets.QApplication(sys.argv)
 window = MainWindow(bvh_reader, args)
 window.setWindowTitle(args.bvh)
 window.show()
