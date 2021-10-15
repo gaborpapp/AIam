@@ -1,7 +1,7 @@
 import time
 import collections
 from argparse import ArgumentParser
-from PyQt4 import QtGui
+from PyQt5 import QtWidgets
 import pickle
 import threading
 import math
@@ -565,7 +565,7 @@ else:
         feature_extractor = FeatureExtractor()
         
     if args.with_viewer:
-        app = QtGui.QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
         viewer = TrackedUsersViewer(interpreter, args,
                                     enable_log_replay=args.log_source)
 

@@ -1,7 +1,7 @@
 import ws4py.client.threadedclient
-from .websocket_server import WEBSOCKET_PORT, WEBSOCKET_APPLICATION
+from connectivity.websocket_server import WEBSOCKET_PORT, WEBSOCKET_APPLICATION
 from event import Event
-from .event_packing import EventPacker
+from connectivity.event_packing import EventPacker
 import contextlib
 from tornado.stack_context import StackContext
 import time

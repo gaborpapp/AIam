@@ -3,7 +3,7 @@ import tornado.ioloop
 import tornado.websocket
 from tornado.httpserver import HTTPServer
 from event import Event
-from .event_packing import EventPacker
+from connectivity.event_packing import EventPacker
 
 WEBSOCKET_APPLICATION = "/aiam"
 WEBSOCKET_PORT = 15001

@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtWidgets
 import math
 import collections
 import numpy
@@ -134,7 +134,7 @@ class TrackedUsersScene(Scene):
             self._draw_orientation(user)
 
     def _draw_skeleton(self, user):
-        if self.args.joint_size > 0:
+        if self.args.joint_size:
             self._draw_joints(user)
         self._draw_limbs(user)
 
@@ -344,10 +344,10 @@ class TrackedUsersScene(Scene):
 
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton and \
-            QtGui.QApplication.instance().keyboardModifiers() == QtCore.Qt.ControlModifier:
+            QtWidgets.QApplication.instance().keyboardModifiers() == QtCore.Qt.ControlModifier:
             self._dragging_tracker_pitch = True
         elif event.button() == QtCore.Qt.RightButton and \
-            QtGui.QApplication.instance().keyboardModifiers() == QtCore.Qt.ControlModifier:
+            QtWidgets.QApplication.instance().keyboardModifiers() == QtCore.Qt.ControlModifier:
             self._dragging_tracker_y_position = True
         else:
             Scene.mousePressEvent(self, event)
@@ -409,9 +409,9 @@ class TrackedUsersScene(Scene):
                     size=12, x=500, y=y, z=0)
                 i += 1
 
-class LogWidget(QtGui.QTextEdit):
+class LogWidget(QtWidgets.QTextEdit):
     def __init__(self, *args, **kwargs):
-        QtGui.QTextEdit.__init__(self, *args, **kwargs)
+        QtWidgets.QTextEdit.__init__(self, *args, **kwargs)
         self.setReadOnly(True)
 
     def append(self, string):
@@ -430,15 +430,14 @@ class TrackedUsersViewer(Window):
         self.interpreter = interpreter
         self.frame = None
         self.floor_y = args.floor_y
-        self._layout = QtGui.QVBoxLayout()
+        self._layout = QtWidgets.QVBoxLayout()
         self._layout.setSpacing(0)
-        self._layout.setMargin(0)
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(self._layout)
 
         self._scene = scene_class(self)
-        size_policy = QtGui.QSizePolicy(
-            QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
+        size_policy = QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         size_policy.setVerticalStretch(2)
         size_policy.setHorizontalStretch(2)
         self._scene.setSizePolicy(size_policy)
@@ -462,7 +461,7 @@ class TrackedUsersViewer(Window):
         parser.add_argument("--show-orientation", action="store_true")
 
     def _create_menu(self):
-        self._menu_bar = QtGui.QMenuBar()
+        self._menu_bar = QtWidgets.QMenuBar()
         self._layout.setMenuBar(self._menu_bar)
         self._create_main_menu()
         self._create_view_menu()
@@ -476,17 +475,17 @@ class TrackedUsersViewer(Window):
         self._add_show_positions_action()
 
     def _add_show_camera_settings_action(self):
-        action = QtGui.QAction('Show camera settings', self)
+        action = QtWidgets.QAction('Show camera settings', self)
         action.triggered.connect(self._scene.print_camera_settings)
         self._main_menu.addAction(action)
 
     def _add_show_tracker_settings_action(self):
-        action = QtGui.QAction('Show tracker settings', self)
+        action = QtWidgets.QAction('Show tracker settings', self)
         action.triggered.connect(self._scene.print_tracker_settings)
         self._main_menu.addAction(action)
 
     def _add_show_positions_action(self):
-        self.show_positions_action = QtGui.QAction('Show positions', self)
+        self.show_positions_action = QtWidgets.QAction('Show positions', self)
         self.show_positions_action.setCheckable(True)
         self.show_positions_action.setShortcut("Ctrl+Shift+p")
         self._main_menu.addAction(self.show_positions_action)
@@ -499,7 +498,7 @@ class TrackedUsersViewer(Window):
         self._add_orientation_action()
 
     def _add_show_field_of_view_action(self):
-        self.show_field_of_view_action = QtGui.QAction('Show field of view', self)
+        self.show_field_of_view_action = QtWidgets.QAction('Show field of view', self)
         self.show_field_of_view_action.setCheckable(True)
         self.show_field_of_view_action.setShortcut("Ctrl+p")
         self.show_field_of_view_action.triggered.connect(self._scene.updateGL)
@@ -507,7 +506,7 @@ class TrackedUsersViewer(Window):
         self.show_field_of_view_action.toggle()
 
     def _add_fullscreen_action(self):
-        self._fullscreen_action = QtGui.QAction('Fullscreen', self)
+        self._fullscreen_action = QtWidgets.QAction('Fullscreen', self)
         self._fullscreen_action.setCheckable(True)
         self._fullscreen_action.setShortcut('Ctrl+Return')
         self._fullscreen_action.toggled.connect(self._toggled_fullscreen)
@@ -520,14 +519,14 @@ class TrackedUsersViewer(Window):
             self.leave_fullscreen()
 
     def _add_auto_refresh_action(self):
-        self.auto_refresh_action = QtGui.QAction('Auto refresh', self)
+        self.auto_refresh_action = QtWidgets.QAction('Auto refresh', self)
         self.auto_refresh_action.setCheckable(True)
         self.auto_refresh_action.setShortcut('r')
         self._view_menu.addAction(self.auto_refresh_action)
         self.auto_refresh_action.toggle()
 
     def _add_orientation_action(self):
-        self.orientation_action = QtGui.QAction('Orientation', self)
+        self.orientation_action = QtWidgets.QAction('Orientation', self)
         self.orientation_action.setCheckable(True)
         self.orientation_action.setShortcut('o')
         self.orientation_action.setChecked(self.args.show_orientation)
@@ -540,19 +539,19 @@ class TrackedUsersViewer(Window):
         self._add_reset_replay_speed_action()
 
     def _add_replay_slower_action(self):
-        action = QtGui.QAction("Replay slower", self)
+        action = QtWidgets.QAction("Replay slower", self)
         action.setShortcut("-")
         action.triggered.connect(lambda: self._change_replay_speed(-1))
         self._replay_menu.addAction(action)
 
     def _add_replay_faster_action(self):
-        action = QtGui.QAction("Replay faster", self)
+        action = QtWidgets.QAction("Replay faster", self)
         action.setShortcut("+")
         action.triggered.connect(lambda: self._change_replay_speed(+1))
         self._replay_menu.addAction(action)
 
     def _add_reset_replay_speed_action(self):
-        action = QtGui.QAction("Reset replay speed", self)
+        action = QtWidgets.QAction("Reset replay speed", self)
         action.setShortcut("0")
         action.triggered.connect(lambda: self._set_replay_speed(1))
         self._replay_menu.addAction(action)
@@ -574,7 +573,7 @@ class TrackedUsersViewer(Window):
         else:
             if self._scene.keyPressEvent(event):
                 self._scene.updateGL()
-            QtGui.QWidget.keyPressEvent(self, event)
+            QtWidgets.QWidget.keyPressEvent(self, event)
 
     def sizeHint(self):
         return QtCore.QSize(640, 480)
@@ -583,14 +582,14 @@ class TrackedUsersViewer(Window):
         self.frame = frame
         self._update_log_widget()
         if self.auto_refresh_action.isChecked() and not self._scene.is_rendering:
-            QtGui.QApplication.postEvent(self, CustomQtEvent(self._scene.updateGL))
+            QtWidgets.QApplication.postEvent(self, CustomQtEvent(self._scene.updateGL))
             
     def _update_log_widget(self):
         for user_id, state in self.frame["user_states"]:
             self.log(self.frame["timestamp"], "%s %s" % (state, user_id))
 
     def log(self, timestamp_ms, message):
-        QtGui.QApplication.postEvent(self, CustomQtEvent(lambda: self._log(
+        QtWidgets.QApplication.postEvent(self, CustomQtEvent(lambda: self._log(
             timestamp_ms, message)))
 
     def _log(self, timestamp_ms, message):
